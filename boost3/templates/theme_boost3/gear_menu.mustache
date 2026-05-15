@@ -1,0 +1,31 @@
+{{!
+    @template theme_boost3/gear_menu
+
+    Moodle-3-style consolidated actions menu (Bootstrap 5 dropdown).
+
+    Context variables:
+    - title string Accessible label
+    - items array of { text, url, active }
+}}
+<div class="dropdown theme-boost3-gear d-flex align-items-center me-1">
+    <button
+        type="button"
+        class="btn btn-icon"
+        id="theme-boost3-gear-btn"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+        title="{{title}}"
+        aria-label="{{title}}"
+    >
+        <span class="sr-only">{{title}}</span>
+        <i class="icon fa fa-cog fa-fw" aria-hidden="true"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="theme-boost3-gear-btn">
+        {{#items}}
+            <li>
+                <a class="dropdown-item {{#active}}active{{/active}}" href="{{url}}">{{text}}</a>
+            </li>
+        {{/items}}
+    </ul>
+</div>
+<div class="divider border-start h-75 align-self-center mx-1 d-flex" aria-hidden="true"></div>
