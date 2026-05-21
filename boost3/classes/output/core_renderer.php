@@ -192,6 +192,16 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
+     * Whether secondary navigation should use the gear menu (Mustache section helper).
+     *
+     * @return string Non-empty when the gear menu should replace horizontal tabs.
+     */
+    public function boost3_use_gear_secondary_nav(): string {
+        global $PAGE;
+        return $this->boost3_should_show_gear($PAGE) ? '1' : '';
+    }
+
+    /**
      * Whether the gear menu should be offered on this page.
      *
      * @param moodle_page $page
@@ -204,7 +214,33 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         if ($page->pagelayout === 'popup' || $page->pagelayout === 'embedded') {
             return false;
         }
+        if ($this->boost3_is_admin_page($page)) {
+            return false;
+        }
         return true;
+    }
+
+    /**
+     * Site administration and related admin UI (keep default secondary navigation).
+     *
+     * @param moodle_page $page
+     * @return bool
+     */
+    protected function boost3_is_admin_page(moodle_page $page): bool {
+        if ($page->pagelayout === 'admin') {
+            return true;
+        }
+        $pagetype = $page->pagetype ?? '';
+        if ($pagetype !== '' && strpos($pagetype, 'admin-') === 0) {
+            return true;
+        }
+        if ($page->url instanceof moodle_url) {
+            $path = $page->url->get_path(false);
+            if ($path === '/admin' || strpos($path, '/admin/') === 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

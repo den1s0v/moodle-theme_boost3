@@ -199,8 +199,13 @@
             {{> theme_boost_union/infobanners }}
             {{{ output.full_header }}}
             {{#secondarymoremenu}}
-                <div class="secondary-navigation theme-boost3-secondary-gear-wrap d-print-none d-flex justify-content-end align-items-center">
-                    {{{ output.gear_menu }}}
+                <div class="secondary-navigation d-print-none{{#output.boost3_use_gear_secondary_nav}} theme-boost3-secondary-gear-wrap d-flex justify-content-end align-items-center{{/output.boost3_use_gear_secondary_nav}}">
+                    {{#output.boost3_use_gear_secondary_nav}}
+                        {{{ output.gear_menu }}}
+                    {{/output.boost3_use_gear_secondary_nav}}
+                    {{^output.boost3_use_gear_secondary_nav}}
+                        {{> core/moremenu}}
+                    {{/output.boost3_use_gear_secondary_nav}}
                 </div>
             {{/secondarymoremenu}}
             {{{ output.course_content_header_notifications }}}

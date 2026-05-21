@@ -1,6 +1,6 @@
 # theme_boost3 (Moodle 4.5)
 
-Grandchild theme of **Boost Union** with a consolidated **gear-style** menu (secondary navigation + common course actions) and SCSS that hides the horizontal secondary navigation bar.
+Grandchild theme of **Boost Union** with a consolidated **gear-style** menu (secondary navigation on course and similar pages). Site **administration** pages (`/admin/…`, `pagelayout=admin`) keep Boost’s default horizontal secondary navigation.
 
 ## Install
 
@@ -17,5 +17,5 @@ After updating theme files, run **Purge all caches** or `php admin/cli/purge_cac
 
 ## Notes
 
-- Configure colours, drawers, and most behaviour in **Boost Union**; this theme adds the gear menu and related SCSS only.
+- Configure colours, drawers, and most behaviour in **Boost Union**; this theme adds the gear menu and related SCSS only (not on admin pages).
 - If you deploy from this repo, rename or symlink `boost3/` → `moodle/theme/boost3/` on the server.
