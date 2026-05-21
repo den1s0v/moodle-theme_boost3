@@ -20,9 +20,62 @@
     }
 }
 
-.theme-boost3-gear .dropdown-menu {
-    max-height: 70vh;
-    overflow-y: auto;
+// Moodle 3.9-style gear trigger: larger blue cog + visible caret.
+.theme-boost3-gear.action-menu {
+    .dropdown-toggle.icon-no-margin {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.125rem 0.25rem;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+        color: #0f6cbf;
+        line-height: 1;
+
+        &:hover,
+        &:focus {
+            color: #094478;
+            text-decoration: none;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        &::after {
+            margin-left: 0.2rem;
+            vertical-align: 0.15em;
+            border-top-color: currentColor;
+        }
+
+        .icon.fa-cog {
+            font-size: 1.1rem;
+            width: auto;
+            height: auto;
+            line-height: 1;
+            color: inherit;
+        }
+    }
+
+    .dropdown-menu {
+        max-height: 70vh;
+        overflow-y: auto;
+
+        .theme-boost3-gear-group-label {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6a737b;
+            padding: 0.5rem 1rem 0.2rem;
+            margin-bottom: 0;
+            white-space: normal;
+            pointer-events: none;
+            cursor: default;
+
+            &:not(:first-child) {
+                padding-top: 0.65rem;
+            }
+        }
+    }
 }
 
 // In-content tertiary nav (participants action bar, layout overflow) when moved to gear.

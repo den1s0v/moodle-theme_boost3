@@ -7,34 +7,40 @@
     - title string Accessible label
     - items array of { text, url, active } or { header } or { divider }
 }}
-<div class="dropdown theme-boost3-gear d-flex align-items-center">
-    <a
-        href="#"
-        role="button"
-        id="theme-boost3-gear-btn"
-        class="btn dropdown-toggle btn-icon"
-        data-toggle="dropdown"
-        aria-haspopup="true"
-        aria-expanded="false"
-        title="{{title}}"
-        aria-label="{{title}}"
-    >
-        <span class="sr-only">{{title}}</span>
-        <i class="icon fa fa-cog fa-fw" aria-hidden="true"></i>
-    </a>
-    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="theme-boost3-gear-btn">
-        {{#items}}
-            {{#divider}}
-                <div class="dropdown-divider" role="separator"></div>
-            {{/divider}}
-            {{#header}}
-                <h6 class="dropdown-header">{{header}}</h6>
-            {{/header}}
-            {{^divider}}
-                {{^header}}
-                    <a class="dropdown-item {{#active}}active{{/active}}" href="{{url}}">{{text}}</a>
-                {{/header}}
-            {{/divider}}
-        {{/items}}
+<div class="action-menu moodle-actionmenu d-inline theme-boost3-gear">
+    <div class="menubar d-flex" role="menubar">
+        <div class="action-menu-trigger">
+            <div class="dropdown">
+                <a
+                    href="#"
+                    tabindex="0"
+                    role="button"
+                    id="theme-boost3-gear-btn"
+                    class="dropdown-toggle icon-no-margin"
+                    data-toggle="dropdown"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    title="{{title}}"
+                    aria-label="{{title}}"
+                >
+                    <i class="icon fa fa-cog fa-fw" title="{{title}}" aria-label="{{title}}"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right menu" aria-labelledby="theme-boost3-gear-btn">
+                    {{#items}}
+                        {{#divider}}
+                            <div class="dropdown-divider" role="separator"></div>
+                        {{/divider}}
+                        {{#header}}
+                            <h6 class="dropdown-header theme-boost3-gear-group-label">{{header}}</h6>
+                        {{/header}}
+                        {{^divider}}
+                            {{^header}}
+                                <a class="dropdown-item {{#active}}active{{/active}}" href="{{url}}" role="menuitem">{{text}}</a>
+                            {{/header}}
+                        {{/divider}}
+                    {{/items}}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
