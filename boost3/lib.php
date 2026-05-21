@@ -25,6 +25,19 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
+ * Whether the Moodle-3-style gear navigation is enabled in theme settings.
+ *
+ * @return bool
+ */
+function theme_boost3_gear_navigation_enabled(): bool {
+    $value = get_config('theme_boost3', 'enablegearmenu');
+    if ($value === false) {
+        return true;
+    }
+    return (bool) $value;
+}
+
+/**
  * Pages that render core participants_action_bar tertiary navigation in content.
  *
  * @param moodle_page $page
@@ -106,6 +119,9 @@ function theme_boost3_page_is_admin_page(moodle_page $page): bool {
  * @return bool
  */
 function theme_boost3_page_should_show_gear(moodle_page $page): bool {
+    if (!theme_boost3_gear_navigation_enabled()) {
+        return false;
+    }
     if (!isloggedin() || isguestuser()) {
         return false;
     }
@@ -200,6 +216,10 @@ function theme_boost3_resolve_settingsnav_menunode(moodle_page $page, $activenod
 function theme_boost3_page_has_navigation_overflow(?moodle_page $page = null): bool {
     global $PAGE;
 
+    if (!theme_boost3_gear_navigation_enabled()) {
+        return false;
+    }
+
     $page = $page ?? $PAGE;
 
     if (!$page->has_secondary_navigation() || !$page->secondarynav) {
@@ -234,7 +254,14 @@ function theme_boost3_page_has_navigation_overflow(?moodle_page $page = null): b
  * @return array
  */
 function theme_boost3_append_drawer_nav_flags(array $templatecontext): array {
-    global $OUTPUT, $PAGE;
+    global $PAGE;
+
+    if (!theme_boost3_gear_navigation_enabled()) {
+        $templatecontext['boost3_show_secondary_tabs'] = $PAGE->has_secondary_navigation();
+        $templatecontext['boost3_use_gear_secondary_nav'] = false;
+        $templatecontext['boost3_hide_tertiary_overflow'] = false;
+        return $templatecontext;
+    }
 
     $hasoverflow = theme_boost3_page_has_navigation_overflow($PAGE);
     $isadmin = theme_boost3_page_is_admin_page($PAGE);

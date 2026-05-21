@@ -7,7 +7,7 @@
 // (at your option) any later version.
 //
 // Moodle is distributed in the hope that it will be useful,
-// but WITHOUT ANY IMPLIED WARRANTY; without even the implied warranty of
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Boost3 (Boost Union child)';
-$string['gearmenu'] = 'Course menu';
-$string['gearmenudesc'] = 'Course and page actions (similar to the old gear menu)';
-$string['enablegearmenu'] = 'Gear-style course menu (Moodle 3.9 style)';
-$string['enablegearmenu_desc'] = 'When enabled, course tabs and section links are consolidated in a gear menu. When disabled, standard Boost horizontal tabs and the tertiary url_select are used. Purge caches after changing this setting.';
+$string['pluginname'] = 'Boost3 (дочерняя тема Boost Union)';
+$string['gearmenu'] = 'Меню курса';
+$string['gearmenudesc'] = 'Действия курса и страницы (как старое меню-шестерёнка)';
+$string['enablegearmenu'] = 'Меню-шестерёнка (как в Moodle 3.9)';
+$string['enablegearmenu_desc'] = 'Если включено, вкладки курса и подразделы собираются в меню-шестерёнку. Если выключено, используется стандартная горизонтальная навигация Boost и выпадающий tertiary. После смены настройки очистите кэши.';

@@ -46,12 +46,36 @@
             border-top-color: currentColor;
         }
 
-        .icon.fa-cog {
-            font-size: 1.1rem;
-            width: auto;
-            height: auto;
+        // Do not use FA6 fa-gear on this trigger (core actionmenu / dropdown-toggle).
+        &::before {
+            content: none !important;
+            display: none !important;
+        }
+
+        .icon.fa,
+        i.fa {
+            display: none !important;
+        }
+
+        .theme-boost3-gear-icon {
+            display: inline-flex;
+            align-items: center;
             line-height: 1;
             color: inherit;
+
+            .theme-boost3-gear-svg,
+            .icon.theme-boost3-gear-svg {
+                width: 1.5rem;
+                height: 1.5rem;
+                display: block;
+                margin: 0;
+                padding: 0;
+                color: inherit;
+
+                path {
+                    fill: currentColor;
+                }
+            }
         }
     }
 

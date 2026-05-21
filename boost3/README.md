@@ -1,6 +1,6 @@
-# theme_boost3 (Moodle 4.5)
+# theme_boost3: making Moodle 4.5 look a bit like Moodle 3.9+.
 
-Grandchild theme of **Boost Union** with a consolidated **gear-style** menu for course navigation.
+Grandchild theme of **Boost Union** with an optional consolidated **gear-style** menu for course navigation.
 
 ## Install
 
@@ -15,7 +15,15 @@ After updating theme files, run **Purge all caches** or `php admin/cli/purge_cac
 - Moodle 4.5.x (matches `version.php` `requires` / `supported`).
 - `theme_boost_union` MOODLE_405_STABLE (or compatible).
 
-## Navigation behaviour
+## Theme settings
+
+*Site administration → Appearance → Themes → Boost3 settings*
+
+| Setting | Description |
+|---------|-------------|
+| **Gear-style course menu** | When enabled (default), Boost3 navigation behaviour below applies. When disabled, the site uses standard Boost horizontal secondary tabs and the tertiary `url_select` with no gear menu. Purge caches after toggling. |
+
+## Navigation behaviour (gear menu enabled)
 
 | Page type | Course tabs (secondary) | Gear menu |
 |-----------|-------------------------|-----------|
@@ -28,4 +36,5 @@ On subsection pages the default `tertiary-navigation` url_select block is hidden
 ## Notes
 
 - Configure colours, drawers, and most behaviour in **Boost Union**; this theme adds the gear menu and related SCSS only (not on admin pages).
+- The gear icon is an inline SVG in `templates/theme_boost3/gear_menu.mustache` (Bootstrap Icons gear-fill, `currentColor` for styling in `scss/post.scss`).
 - If you deploy from this repo, rename or symlink `boost3/` → `moodle/theme/boost3/` on the server.

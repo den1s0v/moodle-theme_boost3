@@ -7,7 +7,7 @@
 // (at your option) any later version.
 //
 // Moodle is distributed in the hope that it will be useful,
-// but WITHOUT ANY IMPLIED WARRANTY; without even the implied warranty of
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Language strings for theme_boost3.
+ * Theme Boost3 settings.
  *
  * @package    theme_boost3
  * @copyright  2026
@@ -24,8 +24,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Boost3 (Boost Union child)';
-$string['gearmenu'] = 'Course menu';
-$string['gearmenudesc'] = 'Course and page actions (similar to the old gear menu)';
-$string['enablegearmenu'] = 'Gear-style course menu (Moodle 3.9 style)';
-$string['enablegearmenu_desc'] = 'When enabled, course tabs and section links are consolidated in a gear menu. When disabled, standard Boost horizontal tabs and the tertiary url_select are used. Purge caches after changing this setting.';
+if ($ADMIN->fulltree) {
+    $settings = new admin_settingpage('themesettingboost3', get_string('pluginname', 'theme_boost3'));
+
+    $name = 'theme_boost3/enablegearmenu';
+    $title = get_string('enablegearmenu', 'theme_boost3');
+    $description = get_string('enablegearmenu_desc', 'theme_boost3');
+    $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
+    $settings->add($setting);
+}

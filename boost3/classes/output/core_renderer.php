@@ -82,49 +82,6 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
-     * Whether horizontal secondary tabs should be shown (Mustache section helper).
-     *
-     * @return string Non-empty when core/moremenu tabs should render.
-     */
-    public function boost3_show_secondary_tabs(): string {
-        global $PAGE;
-
-        if (!$PAGE->has_secondary_navigation()) {
-            return '';
-        }
-        if (theme_boost3_page_is_admin_page($PAGE)) {
-            return '1';
-        }
-        if (theme_boost3_page_has_navigation_overflow($PAGE)) {
-            return '1';
-        }
-        return '';
-    }
-
-    /**
-     * Whether the gear menu should appear in the secondary navigation area.
-     *
-     * @return string Non-empty when the gear menu slot should render.
-     */
-    public function boost3_use_gear_secondary_nav(): string {
-        global $PAGE;
-        return $this->boost3_should_show_gear($PAGE) ? '1' : '';
-    }
-
-    /**
-     * Whether the default tertiary url_select block should be hidden.
-     *
-     * @return string Non-empty when overflow is shown in the gear menu instead.
-     */
-    public function boost3_hide_tertiary_overflow(): string {
-        global $PAGE;
-        if (theme_boost3_page_should_show_gear($PAGE) && theme_boost3_page_has_navigation_overflow($PAGE)) {
-            return '1';
-        }
-        return '';
-    }
-
-    /**
      * Build gear menu items for the current page.
      *
      * @param moodle_page $page
@@ -489,16 +446,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * @return bool
      */
     protected function boost3_should_show_gear(moodle_page $page): bool {
-        if (!isloggedin() || isguestuser()) {
-            return false;
-        }
-        if ($page->pagelayout === 'popup' || $page->pagelayout === 'embedded') {
-            return false;
-        }
-        if (theme_boost3_page_is_admin_page($page)) {
-            return false;
-        }
-        return true;
+        return theme_boost3_page_should_show_gear($page);
     }
 
     /**
