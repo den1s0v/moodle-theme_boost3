@@ -80,3 +80,19 @@ function theme_boost3_alter_css_urls(&$urls) {
     require_once($CFG->dirroot . '/theme/boost_union/lib.php');
     theme_boost_union_alter_css_urls($urls);
 }
+
+/**
+ * Inject HTML into the top navbar (next to messages / user menu).
+ *
+ * Moodle calls theme_<name>_render_navbar_output for the active theme only.
+ * Boost Union's starred-courses popover is forwarded here when Boost3 is active.
+ *
+ * @return string
+ */
+function theme_boost3_render_navbar_output() {
+    global $CFG;
+
+    require_once($CFG->dirroot . '/theme/boost_union/locallib.php');
+
+    return theme_boost_union_get_navbar_starredcoursespopover();
+}

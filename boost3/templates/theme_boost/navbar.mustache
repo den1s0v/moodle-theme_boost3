@@ -56,8 +56,7 @@
     }
 }}
 {{!
-    Boost Union baseline + theme_boost3:
-    * Insert consolidated gear menu ({{{ output.gear_menu }}}) in the user navigation cluster.
+    Boost Union baseline. Gear menu is rendered in theme_boost/drawers (secondary-navigation).
 }}
 {{!
     This template is a modified version of theme_boost/navbar
@@ -109,7 +108,6 @@
         {{/output.page_heading_menu}}
 
         <div id="usernavigation" class="navbar-nav ms-auto h-100">
-            {{{ output.gear_menu }}}
             {{# output.search_box }}
                 {{{ output.search_box }}}
                 <div class="divider border-start h-75 align-self-center mx-1"></div>

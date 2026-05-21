@@ -24,7 +24,8 @@
 
 namespace theme_boost3\output;
 
-use context_course;
+use action_link;
+use core\url as core_url;
 use moodle_page;
 use moodle_url;
 
@@ -34,7 +35,6 @@ defined('MOODLE_INTERNAL') || die();
  * Extends Boost Union renderer with a Moodle-3-style consolidated gear menu.
  */
 class core_renderer extends \theme_boost_union\output\core_renderer {
-
     /**
      * Renders a dropdown that aggregates secondary navigation and common course actions.
      *
@@ -47,15 +47,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             return '';
         }
 
-        $items = [];
-
-        if (!empty($PAGE->secondarynav)) {
-            $children = $PAGE->secondarynav->get_children();
-            $items = array_merge($items, $this->boost3_collect_secondary_nav($children));
-        }
-
-        $this->boost3_append_course_action_items($PAGE, $items);
-
+        $items = $this->boost3_build_gear_items($PAGE);
         if (count($items) === 0) {
             return '';
         }
@@ -67,45 +59,123 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
-     * Whether the gear menu should be offered on this page.
+     * Build gear menu items for the current page.
      *
      * @param moodle_page $page
-     * @return bool
+     * @return array<int, array<string, mixed>>
      */
-    protected function boost3_should_show_gear(moodle_page $page): bool {
-        if (!isloggedin() || isguestuser()) {
-            return false;
+    protected function boost3_build_gear_items(moodle_page $page): array {
+        $items = [];
+        if (!$page->has_secondary_navigation()) {
+            return $items;
         }
-        // Popup / embedded layouts: keep chrome minimal.
-        if ($page->pagelayout === 'popup' || $page->pagelayout === 'embedded') {
-            return false;
+
+        $secondarynav = $page->secondarynav;
+        if (!$secondarynav || empty($secondarynav->children)) {
+            return $items;
         }
-        return true;
+
+        foreach ($secondarynav->children as $child) {
+            $this->boost3_collect_top_level_node($child, $items);
+        }
+
+        $overflowdata = $secondarynav->get_overflow_menu_data();
+        if ($overflowdata !== null) {
+            $overflowexport = $overflowdata->export_for_template($this);
+            if (is_object($overflowexport)) {
+                $overflowexport = (array) $overflowexport;
+            }
+            if (is_array($overflowexport) && !empty($overflowexport['options'])) {
+                foreach ($overflowexport['options'] as $option) {
+                    if (is_object($option)) {
+                        $option = (array) $option;
+                    }
+                    if (!is_array($option) || empty($option['uri']) || empty($option['name'])) {
+                        continue;
+                    }
+                    $url = (string) $option['uri'];
+                    if (!$this->boost3_items_has_url($items, $url)) {
+                        $items[] = [
+                            'text' => $this->boost3_plain_nav_label($option['name'], 0),
+                            'url' => $url,
+                            'active' => false,
+                        ];
+                    }
+                }
+            }
+        }
+
+        return $items;
     }
 
     /**
-     * Flatten secondary navigation nodes that resolve to moodle_url actions.
+     * Collect a single top-level secondary navigation tab (no deep recursion).
      *
-     * @param iterable $nodes
-     * @param int $depth
-     * @return array<int, array<string, mixed>>
+     * @param object $node
+     * @param array $items
      */
-    protected function boost3_collect_secondary_nav(iterable $nodes, int $depth = 0): array {
-        $items = [];
-        foreach ($nodes as $node) {
-            $action = $node->action();
-            if ($action instanceof moodle_url) {
+    protected function boost3_collect_top_level_node($node, array &$items): void {
+        if (!is_object($node)) {
+            return;
+        }
+
+        if (property_exists($node, 'display') && $node->display === false) {
+            return;
+        }
+
+        $url = null;
+        if (method_exists($node, 'action')) {
+            $url = $this->boost3_nav_url_from_action($node->action());
+        }
+
+        $label = method_exists($node, 'get_text') ? $node->get_text() :
+            (property_exists($node, 'text') ? (string) $node->text : '');
+
+        if ($url !== null && $label !== '' && !$this->boost3_items_has_url($items, $url)) {
+            $items[] = [
+                'text' => $this->boost3_plain_nav_label($label, 0),
+                'url' => $url,
+                'active' => !empty($node->isactive),
+            ];
+            return;
+        }
+
+        // Tab container without its own URL: expose direct children only (one level).
+        if (method_exists($node, 'has_children') && $node->has_children() && !empty($node->children)) {
+            foreach ($node->children as $child) {
+                if (!is_object($child) || (property_exists($child, 'display') && $child->display === false)) {
+                    continue;
+                }
+                $childurl = method_exists($child, 'action') ? $this->boost3_nav_url_from_action($child->action()) : null;
+                $childlabel = method_exists($child, 'get_text') ? $child->get_text() :
+                    (property_exists($child, 'text') ? (string) $child->text : '');
+                if ($childurl === null || $childlabel === '' || $this->boost3_items_has_url($items, $childurl)) {
+                    continue;
+                }
                 $items[] = [
-                    'text' => $this->boost3_plain_nav_label($node->get_text(), $depth),
-                    'url' => $action->out(false),
-                    'active' => (bool) $node->is_active(),
+                    'text' => $this->boost3_plain_nav_label($childlabel, 0),
+                    'url' => $childurl,
+                    'active' => !empty($child->isactive),
                 ];
             }
-            if ($node->has_children()) {
-                $items = array_merge($items, $this->boost3_collect_secondary_nav($node->get_children(), $depth + 1));
-            }
         }
-        return $items;
+    }
+
+    /**
+     * @param mixed $action
+     * @return string|null
+     */
+    protected function boost3_nav_url_from_action($action): ?string {
+        if ($action instanceof moodle_url || $action instanceof core_url) {
+            return $action->out(false);
+        }
+        if ($action instanceof action_link) {
+            return $this->boost3_nav_url_from_action($action->url);
+        }
+        if (is_string($action) && $action !== '' && $action !== '#') {
+            return $action;
+        }
+        return null;
     }
 
     /**
@@ -122,62 +192,29 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
-     * Add editing / course settings when relevant and not already present.
+     * Whether the gear menu should be offered on this page.
      *
      * @param moodle_page $page
-     * @param array $items reference
+     * @return bool
      */
-    protected function boost3_append_course_action_items(moodle_page $page, array &$items): void {
-        if (empty($page->course) || empty($page->course->id)) {
-            return;
+    protected function boost3_should_show_gear(moodle_page $page): bool {
+        if (!isloggedin() || isguestuser()) {
+            return false;
         }
-        if ((int) $page->course->id === SITEID) {
-            return;
+        if ($page->pagelayout === 'popup' || $page->pagelayout === 'embedded') {
+            return false;
         }
-
-        try {
-            $coursecontext = context_course::instance($page->course->id);
-        } catch (\Exception $e) {
-            return;
-        }
-
-        if (has_capability('moodle/course:update', $coursecontext)) {
-            $editurl = new moodle_url('/course/view.php', ['id' => $page->course->id, 'sesskey' => sesskey()]);
-            if ($page->user_is_editing()) {
-                $editurl->param('adminedit', 'off');
-                $edittext = get_string('turneditingoff');
-            } else {
-                $editurl->param('edit', '1');
-                $edittext = get_string('turneditingon');
-            }
-            if (!$this->boost3_items_contain_url($items, $editurl)) {
-                array_unshift($items, [
-                    'text' => $edittext,
-                    'url' => $editurl->out(false),
-                    'active' => false,
-                ]);
-            }
-
-            $settingsurl = new moodle_url('/course/edit.php', ['id' => $page->course->id]);
-            if (!$this->boost3_items_contain_url($items, $settingsurl)) {
-                $items[] = [
-                    'text' => get_string('editsettings'),
-                    'url' => $settingsurl->out(false),
-                    'active' => false,
-                ];
-            }
-        }
+        return true;
     }
 
     /**
      * @param array $items
-     * @param moodle_url $url
+     * @param string $url
      * @return bool
      */
-    protected function boost3_items_contain_url(array $items, moodle_url $url): bool {
-        $target = $url->out(false);
+    protected function boost3_items_has_url(array $items, string $url): bool {
         foreach ($items as $item) {
-            if (($item['url'] ?? '') === $target) {
+            if (($item['url'] ?? '') === $url) {
                 return true;
             }
         }

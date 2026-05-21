@@ -1,12 +1,13 @@
-// theme_boost3 — UX tweaks toward Moodle 3-style navigation.
-// Items from the horizontal secondary navigation are exposed via the gear menu renderer.
+// theme_boost3 — gear menu in secondary navigation area.
 
-// Hide the tab-style secondary navigation bar (links are in the gear dropdown).
-.secondary-navigation {
-    display: none !important;
+.secondary-navigation.theme-boost3-secondary-gear-wrap {
+    position: relative;
+    overflow: visible;
+    z-index: 1020;
+    min-height: 2.5rem;
 }
 
-// Optional: keep gear icon visually distinct near legacy “cog” placement.
-.theme-boost3-gear .btn-icon {
-    color: inherit;
+.theme-boost3-gear .dropdown-menu {
+    max-height: 70vh;
+    overflow-y: auto;
 }

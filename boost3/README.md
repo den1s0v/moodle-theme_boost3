@@ -6,7 +6,9 @@ Grandchild theme of **Boost Union** with a consolidated **gear-style** menu (sec
 
 1. Copy this folder into your Moodle tree as `theme/boost3/` (folder name **`boost3`**, component **`theme_boost3`**).
 2. Ensure **Boost Union** is installed under `theme/boost_union/`.
-3. Purge caches, then set **Boost3** as the site theme (or a user theme) in *Site administration → Appearance → Themes*.
+3. Purge caches (required after upgrades), then set **Boost3** as the site theme in *Site administration → Appearance → Themes*.
+
+After updating theme files, run **Purge all caches** or `php admin/cli/purge_caches.php` so Mustache/SCSS changes apply.
 
 ## Requirements
 
