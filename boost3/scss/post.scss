@@ -7,7 +7,30 @@
     min-height: 2.5rem;
 }
 
+.secondary-navigation.theme-boost3-secondary-split {
+    position: relative;
+    overflow: visible;
+    z-index: 1020;
+    min-height: 2.5rem;
+    gap: 0.5rem;
+
+    .moremenu {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+}
+
 .theme-boost3-gear .dropdown-menu {
     max-height: 70vh;
     overflow-y: auto;
+}
+
+// In-content tertiary nav (participants action bar, layout overflow) when moved to gear.
+body.theme-boost3-hide-content-tertiary {
+    #region-main .tertiary-navigation .navitem:first-child,
+    #region-main #action_bar .navitem:first-child,
+    #region-main .tertiary-navigation .dropdown,
+    #region-main #action_bar .dropdown {
+        display: none !important;
+    }
 }

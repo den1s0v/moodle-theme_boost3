@@ -1,6 +1,6 @@
 # theme_boost3 (Moodle 4.5)
 
-Grandchild theme of **Boost Union** with a consolidated **gear-style** menu (secondary navigation on course and similar pages). Site **administration** pages (`/admin/…`, `pagelayout=admin`) keep Boost’s default horizontal secondary navigation.
+Grandchild theme of **Boost Union** with a consolidated **gear-style** menu for course navigation.
 
 ## Install
 
@@ -14,6 +14,16 @@ After updating theme files, run **Purge all caches** or `php admin/cli/purge_cac
 
 - Moodle 4.5.x (matches `version.php` `requires` / `supported`).
 - `theme_boost_union` MOODLE_405_STABLE (or compatible).
+
+## Navigation behaviour
+
+| Page type | Course tabs (secondary) | Gear menu |
+|-----------|-------------------------|-----------|
+| Site **administration** (`/admin/…`) | Standard horizontal tabs | Hidden |
+| **Course** pages (home, modules, etc.) | In the gear menu | Course tabs (Курс, Участники, …) |
+| **Course subsection** with tertiary nav (e.g. Enrolled users, Groups) | Standard horizontal tabs | Section links (former `tertiary-navigation` dropdown) |
+
+On subsection pages the default `tertiary-navigation` url_select block is hidden; those links appear in the gear menu instead.
 
 ## Notes
 

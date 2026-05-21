@@ -31,6 +31,9 @@ use moodle_url;
 
 defined('MOODLE_INTERNAL') || die();
 
+global $CFG;
+require_once($CFG->dirroot . '/theme/boost3/lib.php');
+
 /**
  * Extends Boost Union renderer with a Moodle-3-style consolidated gear menu.
  */
@@ -59,17 +62,96 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
+     * Hide in-content participants tertiary select when it is shown in the gear menu.
+     *
+     * @param object $course
+     * @param string|null $renderedcontent
+     * @return string
+     */
+    public function render_participants_tertiary_nav($course, $renderedcontent = null): string {
+        global $PAGE;
+
+        if (theme_boost3_page_should_show_gear($PAGE) && theme_boost3_page_uses_participants_actionbar($PAGE)) {
+            $actionbar = new \core\output\participants_action_bar($course, $PAGE, $renderedcontent);
+            $context = $actionbar->export_for_template($this);
+            unset($context['navigation']);
+            return $this->render_from_template('core_course/participants_actionbar', $context) ?: '';
+        }
+
+        return parent::render_participants_tertiary_nav($course, $renderedcontent);
+    }
+
+    /**
+     * Whether horizontal secondary tabs should be shown (Mustache section helper).
+     *
+     * @return string Non-empty when core/moremenu tabs should render.
+     */
+    public function boost3_show_secondary_tabs(): string {
+        global $PAGE;
+
+        if (!$PAGE->has_secondary_navigation()) {
+            return '';
+        }
+        if (theme_boost3_page_is_admin_page($PAGE)) {
+            return '1';
+        }
+        if (theme_boost3_page_has_navigation_overflow($PAGE)) {
+            return '1';
+        }
+        return '';
+    }
+
+    /**
+     * Whether the gear menu should appear in the secondary navigation area.
+     *
+     * @return string Non-empty when the gear menu slot should render.
+     */
+    public function boost3_use_gear_secondary_nav(): string {
+        global $PAGE;
+        return $this->boost3_should_show_gear($PAGE) ? '1' : '';
+    }
+
+    /**
+     * Whether the default tertiary url_select block should be hidden.
+     *
+     * @return string Non-empty when overflow is shown in the gear menu instead.
+     */
+    public function boost3_hide_tertiary_overflow(): string {
+        global $PAGE;
+        if (theme_boost3_page_should_show_gear($PAGE) && theme_boost3_page_has_navigation_overflow($PAGE)) {
+            return '1';
+        }
+        return '';
+    }
+
+    /**
      * Build gear menu items for the current page.
      *
      * @param moodle_page $page
      * @return array<int, array<string, mixed>>
      */
     protected function boost3_build_gear_items(moodle_page $page): array {
-        $items = [];
         if (!$page->has_secondary_navigation()) {
-            return $items;
+            return [];
         }
 
+        $hasoverflow = $this->boost3_has_navigation_overflow($page);
+
+        if ($hasoverflow) {
+            return $this->boost3_build_overflow_gear_items($page);
+        }
+
+        return $this->boost3_build_secondary_gear_items($page);
+    }
+
+    /**
+     * Gear items from course secondary navigation tabs (default course pages).
+     *
+     * @param moodle_page $page
+     * @return array<int, array<string, mixed>>
+     */
+    protected function boost3_build_secondary_gear_items(moodle_page $page): array {
+        $items = [];
         $secondarynav = $page->secondarynav;
         if (!$secondarynav || empty($secondarynav->children)) {
             return $items;
@@ -79,6 +161,29 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $this->boost3_collect_top_level_node($child, $items);
         }
 
+        return $items;
+    }
+
+    /**
+     * Gear items from tertiary overflow navigation (e.g. Users section sub-pages).
+     *
+     * @param moodle_page $page
+     * @return array<int, array<string, mixed>>
+     */
+    protected function boost3_build_overflow_gear_items(moodle_page $page): array {
+        $items = [];
+        $secondarynav = $page->secondarynav;
+        if (!$secondarynav) {
+            return $items;
+        }
+
+        if (theme_boost3_page_uses_participants_actionbar($page)) {
+            $participantitems = $this->boost3_build_participants_gear_items($page);
+            if (count($participantitems) > 0) {
+                return $participantitems;
+            }
+        }
+
         $overflowdata = $secondarynav->get_overflow_menu_data();
         if ($overflowdata !== null) {
             $overflowexport = $overflowdata->export_for_template($this);
@@ -86,26 +191,212 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                 $overflowexport = (array) $overflowexport;
             }
             if (is_array($overflowexport) && !empty($overflowexport['options'])) {
-                foreach ($overflowexport['options'] as $option) {
-                    if (is_object($option)) {
-                        $option = (array) $option;
-                    }
-                    if (!is_array($option) || empty($option['uri']) || empty($option['name'])) {
-                        continue;
-                    }
-                    $url = (string) $option['uri'];
-                    if (!$this->boost3_items_has_url($items, $url)) {
-                        $items[] = [
-                            'text' => $this->boost3_plain_nav_label($option['name'], 0),
-                            'url' => $url,
-                            'active' => false,
-                        ];
-                    }
-                }
+                $this->boost3_collect_overflow_options($overflowexport['options'], $items);
+                return $items;
             }
         }
 
+        return $this->boost3_build_overflow_gear_items_from_settingsnav($page);
+    }
+
+    /**
+     * Build overflow gear items from settings navigation when url_select is unavailable.
+     *
+     * @param moodle_page $page
+     * @return array<int, array<string, mixed>>
+     */
+    protected function boost3_build_overflow_gear_items_from_settingsnav(moodle_page $page): array {
+        $items = [];
+        if (!$page->settingsnav || !$page->secondarynav) {
+            return $items;
+        }
+
+        $activenode = $page->secondarynav->find_active_node();
+        if (!$activenode) {
+            foreach ($page->secondarynav->children as $child) {
+                if (is_object($child) && !empty($child->isactive)) {
+                    $activenode = $child;
+                    break;
+                }
+            }
+        }
+        if (!$activenode) {
+            return $items;
+        }
+
+        $excludedkeys = ['coursehome', 'questionbank', 'coursereports'];
+        if (in_array($activenode->key, $excludedkeys, true)) {
+            return $items;
+        }
+
+        $menunode = theme_boost3_resolve_settingsnav_menunode($page, $activenode);
+        if (!is_object($menunode) || !method_exists($menunode, 'has_children') || !$menunode->has_children()) {
+            return $items;
+        }
+
+        $this->boost3_collect_settingsnav_menu_node($menunode, $items);
+
         return $items;
+    }
+
+    /**
+     * Gear items for the participants page (matches core participants_action_bar).
+     *
+     * @param moodle_page $page
+     * @return array<int, array<string, mixed>>
+     */
+    protected function boost3_build_participants_gear_items(moodle_page $page): array {
+        $items = [];
+        $actionbar = new \core\output\participants_action_bar($page->course, $page, null);
+        $dropdown = $actionbar->get_dropdown($this);
+        if ($dropdown === null) {
+            return $items;
+        }
+        if (is_object($dropdown)) {
+            $dropdown = (array) $dropdown;
+        }
+        if (!empty($dropdown['options']) && is_array($dropdown['options'])) {
+            $this->boost3_collect_overflow_options($dropdown['options'], $items);
+        }
+
+        return $items;
+    }
+
+    /**
+     * Collect gear items from a settings navigation subtree (with optional group headers).
+     *
+     * @param object $node
+     * @param array $items
+     */
+    protected function boost3_collect_settingsnav_menu_node($node, array &$items): void {
+        if (!method_exists($node, 'has_children') || !$node->has_children() || empty($node->children)) {
+            return;
+        }
+
+        foreach ($node->children as $child) {
+            if (!is_object($child) || (property_exists($child, 'display') && $child->display === false)) {
+                continue;
+            }
+
+            $url = method_exists($child, 'action') ? $this->boost3_nav_url_from_action($child->action()) : null;
+            $label = method_exists($child, 'get_text') ? $child->get_text() :
+                (property_exists($child, 'text') ? (string) $child->text : '');
+
+            if ($url !== null && $label !== '' && !$this->boost3_items_has_url($items, $url)) {
+                $items[] = [
+                    'text' => $this->boost3_plain_nav_label($label, 0),
+                    'url' => $url,
+                    'active' => !empty($child->isactive),
+                ];
+                continue;
+            }
+
+            if (method_exists($child, 'has_children') && $child->has_children() && !empty($child->children)) {
+                $grouplabel = $this->boost3_plain_nav_label($label, 0);
+                if ($grouplabel === '') {
+                    continue;
+                }
+                if (count($items) > 0) {
+                    $items[] = ['divider' => true];
+                }
+                $items[] = ['header' => $grouplabel];
+                foreach ($child->children as $grandchild) {
+                    if (!is_object($grandchild) || (property_exists($grandchild, 'display') && $grandchild->display === false)) {
+                        continue;
+                    }
+                    $childurl = method_exists($grandchild, 'action') ? $this->boost3_nav_url_from_action($grandchild->action()) : null;
+                    $grandlabel = method_exists($grandchild, 'get_text') ? $grandchild->get_text() :
+                        (property_exists($grandchild, 'text') ? (string) $grandchild->text : '');
+                    if ($childurl === null || $grandlabel === '' || $this->boost3_items_has_url($items, $childurl)) {
+                        continue;
+                    }
+                    $items[] = [
+                        'text' => $this->boost3_plain_nav_label($grandlabel, 0),
+                        'url' => $childurl,
+                        'active' => !empty($grandchild->isactive),
+                    ];
+                }
+            }
+        }
+    }
+
+    /**
+     * Collect links from url_select export (supports optgroups).
+     *
+     * @param array $options
+     * @param array $items
+     */
+    protected function boost3_collect_overflow_options(array $options, array &$items): void {
+        foreach ($options as $option) {
+            if (is_object($option)) {
+                $option = (array) $option;
+            }
+            if (!is_array($option)) {
+                continue;
+            }
+
+            if (!empty($option['isgroup']) && !empty($option['options']) && is_array($option['options'])) {
+                if (count($items) > 0) {
+                    $items[] = ['divider' => true];
+                }
+                $groupname = $this->boost3_plain_nav_label($option['name'] ?? '', 0);
+                if ($groupname !== '') {
+                    $items[] = ['header' => $groupname];
+                }
+                $this->boost3_collect_overflow_options($option['options'], $items);
+                continue;
+            }
+
+            if (!empty($option['disabled'])) {
+                continue;
+            }
+
+            $value = isset($option['value']) ? (string) $option['value'] : '';
+            $name = isset($option['name']) ? (string) $option['name'] : '';
+            if ($value === '' || $name === '') {
+                continue;
+            }
+
+            $url = $this->boost3_overflow_option_url($value);
+            if ($url === null || $this->boost3_items_has_url($items, $url)) {
+                continue;
+            }
+
+            $items[] = [
+                'text' => $this->boost3_plain_nav_label($name, 0),
+                'url' => $url,
+                'active' => !empty($option['selected']),
+            ];
+        }
+    }
+
+    /**
+     * Build a navigable URL from an overflow option value.
+     *
+     * @param string $value
+     * @return string|null
+     */
+    protected function boost3_overflow_option_url(string $value): ?string {
+        if ($value === '') {
+            return null;
+        }
+        if (preg_match('/^https?:\/\//i', $value)) {
+            return $value;
+        }
+        if ($value[0] === '/') {
+            return (new moodle_url($value))->out(false);
+        }
+        return (new moodle_url('/course/jumpto.php', ['jump' => $value]))->out(false);
+    }
+
+    /**
+     * Whether the page uses tertiary overflow navigation.
+     *
+     * @param moodle_page $page
+     * @return bool
+     */
+    protected function boost3_has_navigation_overflow(moodle_page $page): bool {
+        return theme_boost3_page_has_navigation_overflow($page);
     }
 
     /**
@@ -192,16 +483,6 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
-     * Whether secondary navigation should use the gear menu (Mustache section helper).
-     *
-     * @return string Non-empty when the gear menu should replace horizontal tabs.
-     */
-    public function boost3_use_gear_secondary_nav(): string {
-        global $PAGE;
-        return $this->boost3_should_show_gear($PAGE) ? '1' : '';
-    }
-
-    /**
      * Whether the gear menu should be offered on this page.
      *
      * @param moodle_page $page
@@ -214,33 +495,10 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         if ($page->pagelayout === 'popup' || $page->pagelayout === 'embedded') {
             return false;
         }
-        if ($this->boost3_is_admin_page($page)) {
+        if (theme_boost3_page_is_admin_page($page)) {
             return false;
         }
         return true;
-    }
-
-    /**
-     * Site administration and related admin UI (keep default secondary navigation).
-     *
-     * @param moodle_page $page
-     * @return bool
-     */
-    protected function boost3_is_admin_page(moodle_page $page): bool {
-        if ($page->pagelayout === 'admin') {
-            return true;
-        }
-        $pagetype = $page->pagetype ?? '';
-        if ($pagetype !== '' && strpos($pagetype, 'admin-') === 0) {
-            return true;
-        }
-        if ($page->url instanceof moodle_url) {
-            $path = $page->url->get_path(false);
-            if ($path === '/admin' || strpos($path, '/admin/') === 0) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

@@ -65,7 +65,7 @@
         course_content_header_notifications and course_content_header_coursecontent to be able to show the notifications
         before the blocks in the contentupper region.
     * Added smartmenu js to support third level submenus.
-    * theme_boost3: render gear menu in secondary-navigation area.
+    * theme_boost3: gear menu or split secondary tabs + gear when tertiary overflow is active.
 }}
 {{> theme_boost/head }}
 
@@ -199,13 +199,13 @@
             {{> theme_boost_union/infobanners }}
             {{{ output.full_header }}}
             {{#secondarymoremenu}}
-                <div class="secondary-navigation d-print-none{{#output.boost3_use_gear_secondary_nav}} theme-boost3-secondary-gear-wrap d-flex justify-content-end align-items-center{{/output.boost3_use_gear_secondary_nav}}">
-                    {{#output.boost3_use_gear_secondary_nav}}
-                        {{{ output.gear_menu }}}
-                    {{/output.boost3_use_gear_secondary_nav}}
-                    {{^output.boost3_use_gear_secondary_nav}}
+                <div class="secondary-navigation d-print-none{{#boost3_show_secondary_tabs}} theme-boost3-secondary-split d-flex justify-content-between align-items-center{{/boost3_show_secondary_tabs}}{{^boost3_show_secondary_tabs}}{{#boost3_use_gear_secondary_nav}} theme-boost3-secondary-gear-wrap d-flex justify-content-end align-items-center{{/boost3_use_gear_secondary_nav}}{{/boost3_show_secondary_tabs}}">
+                    {{#boost3_show_secondary_tabs}}
                         {{> core/moremenu}}
-                    {{/output.boost3_use_gear_secondary_nav}}
+                    {{/boost3_show_secondary_tabs}}
+                    {{#boost3_use_gear_secondary_nav}}
+                        {{{ output.gear_menu }}}
+                    {{/boost3_use_gear_secondary_nav}}
                 </div>
             {{/secondarymoremenu}}
             {{{ output.course_content_header_notifications }}}
@@ -232,11 +232,13 @@
                             {{> core/activity_header }}
                         {{/headercontent}}
                         {{#overflow}}
+                            {{^boost3_hide_tertiary_overflow}}
                             <div class="container-fluid tertiary-navigation">
                                 <div class="navitem">
                                     {{> core/url_select}}
                                 </div>
                             </div>
+                            {{/boost3_hide_tertiary_overflow}}
                         {{/overflow}}
                         {{{courserelatedhints}}}
                         {{#sliderpositionbeforebefore}}
