@@ -1,5 +1,13 @@
 // theme_boost3 — gear menu in secondary navigation area.
 
+// Gear in page header row (course home and other gear-only pages).
+#page-header .header-actions-container .theme-boost3-gear.action-menu {
+    .dropdown-toggle.icon-no-margin {
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+}
+
 .secondary-navigation.theme-boost3-secondary-gear-wrap {
     position: relative;
     overflow: visible;

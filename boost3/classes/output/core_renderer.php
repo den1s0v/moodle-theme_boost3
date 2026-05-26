@@ -62,6 +62,22 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
+     * Inject gear into the page header row on course pages without horizontal secondary tabs.
+     *
+     * @return string
+     */
+    public function full_header() {
+        if (theme_boost3_page_should_inline_gear_with_header($this->page)) {
+            $gear = $this->gear_menu();
+            if ($gear !== '') {
+                $this->page->add_header_action($gear);
+            }
+        }
+
+        return parent::full_header();
+    }
+
+    /**
      * Hide in-content participants tertiary select when it is shown in the gear menu.
      *
      * @param object $course

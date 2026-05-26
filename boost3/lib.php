@@ -304,6 +304,28 @@ function theme_boost3_page_has_navigation_overflow(?moodle_page $page = null): b
 }
 
 /**
+ * Whether the gear menu should sit in the page header row (course home gear-only mode).
+ *
+ * @param moodle_page $page
+ * @return bool
+ */
+function theme_boost3_page_should_inline_gear_with_header(moodle_page $page): bool {
+    if (!theme_boost3_page_should_show_gear($page)) {
+        return false;
+    }
+    if (!$page->has_secondary_navigation()) {
+        return false;
+    }
+    if (theme_boost3_page_is_admin_page($page)) {
+        return false;
+    }
+    if (theme_boost3_page_has_navigation_overflow($page)) {
+        return false;
+    }
+    return true;
+}
+
+/**
  * Add Boost3 navigation flags to the drawers template context (root-level keys).
  *
  * @param array $templatecontext
@@ -324,9 +346,11 @@ function theme_boost3_append_drawer_nav_flags(array $templatecontext): array {
     $showtabs = $PAGE->has_secondary_navigation() && ($isadmin || $hasoverflow);
     $usegear = theme_boost3_page_should_show_gear($PAGE);
     $hidetertiary = $usegear && $hasoverflow;
+    $inlinegear = theme_boost3_page_should_inline_gear_with_header($PAGE);
 
     $templatecontext['boost3_show_secondary_tabs'] = $showtabs;
-    $templatecontext['boost3_use_gear_secondary_nav'] = $usegear;
+    $templatecontext['boost3_use_gear_secondary_nav'] = $usegear && !$inlinegear;
+    $templatecontext['boost3_gear_inline_header'] = $inlinegear;
     $templatecontext['boost3_hide_tertiary_overflow'] = $hidetertiary;
     $templatecontext['boost3_participants_gear'] = $usegear && theme_boost3_page_uses_participants_actionbar($PAGE);
 
