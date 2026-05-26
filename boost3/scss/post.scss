@@ -102,6 +102,14 @@
     }
 }
 
+// Participants action bar: keep action buttons on the right (core uses two navitems;
+// when navigation is in the gear menu, the remaining navitem must still align right).
+#region-main #action_bar .row {
+    .navitem:last-child {
+        margin-left: auto;
+    }
+}
+
 // In-content tertiary url_select when moved to gear. Do not hide #action_bar wholesale:
 // after navigation is removed in PHP, action buttons (e.g. Enrol users) are the first navitem.
 body.theme-boost3-hide-content-tertiary {
