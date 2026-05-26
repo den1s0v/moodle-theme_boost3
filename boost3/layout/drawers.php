@@ -147,7 +147,9 @@ $templatecontext = [
 
 $templatecontext = theme_boost3_append_drawer_nav_flags($templatecontext);
 
-if (!empty($templatecontext['boost3_hide_tertiary_overflow'])) {
+// Participants action bar: navigation is stripped in PHP; only hide in-content tertiary elsewhere.
+if (!empty($templatecontext['boost3_hide_tertiary_overflow'])
+        && !theme_boost3_page_uses_participants_actionbar($PAGE)) {
     $extraclasses[] = 'theme-boost3-hide-content-tertiary';
 }
 $templatecontext['bodyattributes'] = $OUTPUT->body_attributes($extraclasses);

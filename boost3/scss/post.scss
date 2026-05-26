@@ -102,12 +102,15 @@
     }
 }
 
-// In-content tertiary nav (participants action bar, layout overflow) when moved to gear.
+// In-content tertiary url_select when moved to gear. Do not hide #action_bar wholesale:
+// after navigation is removed in PHP, action buttons (e.g. Enrol users) are the first navitem.
 body.theme-boost3-hide-content-tertiary {
-    #region-main .tertiary-navigation .navitem:first-child,
-    #region-main #action_bar .navitem:first-child,
-    #region-main .tertiary-navigation .dropdown,
-    #region-main #action_bar .dropdown {
+    #region-main .tertiary-navigation:not(#action_bar) .navitem:first-child,
+    #region-main .tertiary-navigation:not(#action_bar) .dropdown {
+        display: none !important;
+    }
+
+    #region-main #action_bar .navitem:has(select[name="participantsnavigation"]) {
         display: none !important;
     }
 }
