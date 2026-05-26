@@ -75,6 +75,9 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $actionbar = new \core\output\participants_action_bar($course, $PAGE, $renderedcontent);
             $context = $actionbar->export_for_template($this);
             unset($context['navigation']);
+            if (empty($context['renderedcontent'])) {
+                return '';
+            }
             return $this->render_from_template('core_course/participants_actionbar', $context) ?: '';
         }
 
@@ -209,12 +212,13 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         if ($dropdown === null) {
             return $items;
         }
-        if (is_object($dropdown)) {
-            $dropdown = (array) $dropdown;
+
+        $data = json_decode(json_encode($dropdown), true);
+        if (!is_array($data) || empty($data['options']) || !is_array($data['options'])) {
+            return $items;
         }
-        if (!empty($dropdown['options']) && is_array($dropdown['options'])) {
-            $this->boost3_collect_overflow_options($dropdown['options'], $items);
-        }
+
+        $this->boost3_collect_overflow_options($data['options'], $items);
 
         return $items;
     }

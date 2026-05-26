@@ -31,7 +31,9 @@ After updating theme files, run **Purge all caches** or `php admin/cli/purge_cac
 | **Course** pages (home, modules, etc.) | In the gear menu | Course tabs (Курс, Участники, …) |
 | **Course subsection** with tertiary nav (e.g. Enrolled users, Groups) | Standard horizontal tabs | Section links (former `tertiary-navigation` dropdown) |
 
-On subsection pages the default `tertiary-navigation` url_select block is hidden; those links appear in the gear menu instead. Action buttons in the participants action bar (e.g. **Enrol users**) stay visible next to the gear menu.
+On subsection pages the default `tertiary-navigation` url_select block is hidden; those links appear in the gear menu instead (with group headers, matching core `participants_action_bar`). Action buttons in the participants action bar (e.g. **Enrol users**) stay visible next to the gear menu.
+
+Pages in the **Participants** section (including `/enrol/renameroles.php`, role permissions, groups, etc.) are detected via the course `users` settings navigation subtree, not only a fixed URL list.
 
 ## Notes
 

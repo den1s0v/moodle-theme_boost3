@@ -110,6 +110,13 @@
     }
 }
 
+// Hide in-content participants tertiary combobox when the gear menu replaces it.
+body.theme-boost3-participants-gear {
+    #region-main #action_bar .navitem:has(.tertiary-navigation-selector) {
+        display: none !important;
+    }
+}
+
 // In-content tertiary url_select when moved to gear. Do not hide #action_bar wholesale:
 // after navigation is removed in PHP, action buttons (e.g. Enrol users) are the first navitem.
 body.theme-boost3-hide-content-tertiary {

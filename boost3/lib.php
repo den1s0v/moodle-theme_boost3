@@ -38,6 +38,47 @@ function theme_boost3_gear_navigation_enabled(): bool {
 }
 
 /**
+ * Whether a settings navigation node belongs to the course users (participants) subtree.
+ *
+ * @param object|null $node
+ * @return bool
+ */
+function theme_boost3_settingsnav_node_is_under_users($node): bool {
+    while (is_object($node)) {
+        if (($node->key ?? '') === 'users') {
+            return true;
+        }
+        $node = $node->parent ?? null;
+    }
+    return false;
+}
+
+/**
+ * Whether the participants secondary tab is active.
+ *
+ * @param moodle_page $page
+ * @return bool
+ */
+function theme_boost3_page_has_active_participants_secondary_tab(moodle_page $page): bool {
+    if (!$page->secondarynav) {
+        return false;
+    }
+
+    $activenode = $page->secondarynav->find_active_node();
+    if (is_object($activenode) && ($activenode->key ?? '') === 'participants') {
+        return true;
+    }
+
+    foreach ($page->secondarynav->children as $child) {
+        if (is_object($child) && !empty($child->isactive) && ($child->key ?? '') === 'participants') {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
  * Pages that render core participants_action_bar tertiary navigation in content.
  *
  * @param moodle_page $page
@@ -62,6 +103,7 @@ function theme_boost3_page_uses_participants_actionbar(moodle_page $page): bool 
             '/user/index.php',
             '/enrol/otherusers.php',
             '/enrol/instances.php',
+            '/enrol/renameroles.php',
             '/group/index.php',
             '/group/groupings.php',
             '/group/overview.php',
@@ -74,6 +116,20 @@ function theme_boost3_page_uses_participants_actionbar(moodle_page $page): bool 
         if (preg_match('#^/admin/roles/(permissions|check|override|assign)\\.php#', $path)
             && $page->context && $page->context->contextlevel == CONTEXT_COURSE) {
             return true;
+        }
+    }
+
+    // Any course page in the participants (users) section with tertiary navigation.
+    if ($page->context && $page->context->contextlevel == CONTEXT_COURSE && $page->settingsnav) {
+        $usersnode = $page->settingsnav->find('users', null);
+        if (is_object($usersnode) && method_exists($usersnode, 'has_children') && $usersnode->has_children()) {
+            $activenode = $page->settingsnav->find_active_node();
+            if (is_object($activenode) && theme_boost3_settingsnav_node_is_under_users($activenode)) {
+                return true;
+            }
+            if (theme_boost3_page_has_active_participants_secondary_tab($page)) {
+                return true;
+            }
         }
     }
 
@@ -272,6 +328,7 @@ function theme_boost3_append_drawer_nav_flags(array $templatecontext): array {
     $templatecontext['boost3_show_secondary_tabs'] = $showtabs;
     $templatecontext['boost3_use_gear_secondary_nav'] = $usegear;
     $templatecontext['boost3_hide_tertiary_overflow'] = $hidetertiary;
+    $templatecontext['boost3_participants_gear'] = $usegear && theme_boost3_page_uses_participants_actionbar($PAGE);
 
     return $templatecontext;
 }

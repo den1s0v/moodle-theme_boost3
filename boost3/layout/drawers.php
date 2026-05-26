@@ -152,6 +152,9 @@ if (!empty($templatecontext['boost3_hide_tertiary_overflow'])
         && !theme_boost3_page_uses_participants_actionbar($PAGE)) {
     $extraclasses[] = 'theme-boost3-hide-content-tertiary';
 }
+if (!empty($templatecontext['boost3_participants_gear'])) {
+    $extraclasses[] = 'theme-boost3-participants-gear';
+}
 $templatecontext['bodyattributes'] = $OUTPUT->body_attributes($extraclasses);
 
 require_once($unionlayout . '/includes/courserelatedhints.php');
