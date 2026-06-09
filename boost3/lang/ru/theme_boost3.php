@@ -33,3 +33,5 @@ $string['enablelegacydrawer'] = 'Левая панель навигации (к�
 $string['enablelegacydrawer_desc'] = 'Если включено, левая панель показывает плоский список ссылок курса, сайта и «Мои курсы» вместо дерева активностей. Горизонтальные вкладки курса переносятся в панель. После смены настройки очистите кэши.';
 $string['legacydrawernav'] = 'Навигация по курсу и сайту';
 $string['legacydrawersite'] = 'Сайт';
+$string['legacydrawertoggleopen'] = 'Открыть панель навигации';
+$string['legacydrawertoggleclose'] = 'Закрыть панель навигации';

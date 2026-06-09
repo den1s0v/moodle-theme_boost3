@@ -33,3 +33,5 @@ $string['enablelegacydrawer'] = 'Legacy left navigation drawer (Moodle 3.9 style
 $string['enablelegacydrawer_desc'] = 'When enabled, the left drawer shows flat course, site and my courses links instead of the activity tree. Secondary tabs move into the drawer. Purge caches after changing this setting.';
 $string['legacydrawernav'] = 'Course and site navigation';
 $string['legacydrawersite'] = 'Site';
+$string['legacydrawertoggleopen'] = 'Open navigation panel';
+$string['legacydrawertoggleclose'] = 'Close navigation panel';

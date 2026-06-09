@@ -88,7 +88,7 @@
             {{$drawerpreferencename}}drawer-open-index{{/drawerpreferencename}}
             {{$drawerstate}}show-drawer-left{{/drawerstate}}
             {{$tooltipplacement}}right{{/tooltipplacement}}
-            {{$closebuttontext}}{{#str}}closecourseindex, core{{/str}}{{/closebuttontext}}
+            {{$closebuttontext}}{{#str}}legacydrawertoggleclose, theme_boost3{{/str}}{{/closebuttontext}}
         {{/ theme_boost/drawer}}
     {{/legacynavdrawer}}
     {{#courseindex}}
@@ -356,4 +356,27 @@ require(['theme_boost/loader', 'theme_boost/drawer'{{#regions.offcanvas.hasblock
 {{#regions.offcanvas.hasblocks}}OffCanvas.init();{{/regions.offcanvas.hasblocks}}
 {{#includesmartmenu}}SmartMenu.init();{{/includesmartmenu}}
 });
+{{#boost3_legacy_drawer}}
+require(['jquery'], function($) {
+    const btn = document.querySelector('.theme-boost3-legacy-nav-toggle');
+    const drawer = document.getElementById('theme_boost-drawers-courseindex');
+    if (!btn || !drawer) {
+        return;
+    }
+    const syncToggle = (isOpen) => {
+        const title = isOpen ? btn.dataset.boost3DrawerTitleClose : btn.dataset.boost3DrawerTitleOpen;
+        btn.setAttribute('title', title);
+        btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        const sr = btn.querySelector('.sr-only');
+        if (sr) {
+            sr.textContent = title;
+        }
+        if (btn.getAttribute('data-toggle') === 'tooltip') {
+            $(btn).attr('data-original-title', title).tooltip('dispose').tooltip({placement: 'bottom'});
+        }
+    };
+    drawer.addEventListener('theme_boost/drawers:shown', () => syncToggle(true));
+    drawer.addEventListener('theme_boost/drawers:hidden', () => syncToggle(false));
+});
+{{/boost3_legacy_drawer}}
 {{/js}}

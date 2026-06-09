@@ -90,15 +90,28 @@
 
         {{#boost3_legacy_nav_toggle}}
         <button
-            class="navbar-toggler aabtn theme-boost3-legacy-nav-toggle d-block px-1 my-1 border-0 me-2"
+            class="btn icon-no-margin aabtn theme-boost3-legacy-nav-toggle d-block px-2 my-1 border-0 me-2"
             data-toggler="drawers"
             data-action="toggle"
             data-target="theme_boost-drawers-courseindex"
             aria-controls="theme_boost-drawers-courseindex"
-            title="{{#str}}opendrawerindex, core{{/str}}"
+            aria-expanded="{{#courseindexopen}}true{{/courseindexopen}}{{^courseindexopen}}false{{/courseindexopen}}"
+            data-toggle="tooltip"
+            data-placement="bottom"
+            data-boost3-drawer-title-open="{{#str}}legacydrawertoggleopen, theme_boost3{{/str}}"
+            data-boost3-drawer-title-close="{{#str}}legacydrawertoggleclose, theme_boost3{{/str}}"
+            {{#courseindexopen}}
+            title="{{#str}}legacydrawertoggleclose, theme_boost3{{/str}}"
+            {{/courseindexopen}}
+            {{^courseindexopen}}
+            title="{{#str}}legacydrawertoggleopen, theme_boost3{{/str}}"
+            {{/courseindexopen}}
         >
-            <span class="navbar-toggler-icon"></span>
-            <span class="sr-only">{{#str}}opendrawerindex, core{{/str}}</span>
+            <i class="icon fa fa-bars fa-fw" aria-hidden="true"></i>
+            <span class="sr-only">
+                {{#courseindexopen}}{{#str}}legacydrawertoggleclose, theme_boost3{{/str}}{{/courseindexopen}}
+                {{^courseindexopen}}{{#str}}legacydrawertoggleopen, theme_boost3{{/str}}{{/courseindexopen}}
+            </span>
         </button>
         {{/boost3_legacy_nav_toggle}}
 
