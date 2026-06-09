@@ -82,16 +82,14 @@ class active_state_resolver {
      * @return bool
      */
     public function mycourses_item(bool $nodeactive, string $url): bool {
-        if (theme_boost3_page_is_course_format_view($this->page)) {
+        // Course block above already highlights the current context; never duplicate in mycourses.
+        if (theme_boost3_page_is_course_scoped_page($this->page)) {
             return false;
         }
         if ($nodeactive) {
             return true;
         }
-        if (!theme_boost3_page_is_course_scoped_page($this->page)) {
-            return false;
-        }
-        return $this->course_view_url_matches_current_course($url);
+        return false;
     }
 
     /**

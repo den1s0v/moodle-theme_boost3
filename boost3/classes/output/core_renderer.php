@@ -514,7 +514,8 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $this->boost3_plain_nav_label($label, 0),
             $url,
             $this->boost3_active_resolver()->from_nav_node(!empty($node->isactive), $url),
-            $this->boost3_legacy_item_icon_from_node($this->page, $node)
+            null,
+            $node
         );
     }
 
@@ -673,6 +674,20 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             'questionbank' => 'i/questions',
             'participants' => 'i/users',
             'users' => 'i/users',
+            'enrol' => 'i/users',
+            'enrolments' => 'i/users',
+            'instances' => 'i/users',
+            'otherusers' => 'i/users',
+            'enrolotherusers' => 'i/users',
+            'renameroles' => 'i/roles',
+            'roles' => 'i/roles',
+            'permissions' => 'i/permissions',
+            'override' => 'i/permissions',
+            'check' => 'i/permissions',
+            'assign' => 'i/roles',
+            'groups' => 'i/group',
+            'groupings' => 'i/group',
+            'overview' => 'i/group',
             'grades' => 'i/grades',
             'gradeadmin' => 'i/grades',
             'competencies' => 'i/competencies',
@@ -681,12 +696,19 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             'settings' => 'i/settings',
             'courseedit' => 'i/settings',
             'coursereports' => 'i/report',
+            'reports' => 'i/report',
             'coursecompletion' => 'i/award',
+            'completion' => 'i/award',
             'badges' => 'i/badge',
             'contentbank' => 'i/contentbank',
             'filtermanagement' => 'i/filter',
+            'filters' => 'i/filter',
             'coursetools' => 'i/external',
+            'lti' => 'i/external',
             'backup' => 'i/backup',
+            'restore' => 'i/restore',
+            'reuse' => 'i/restore',
+            'unenrolself' => 'i/user',
         ];
 
         if ($key === '' || !isset($fallbackicons[$key])) {
@@ -694,6 +716,52 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         }
 
         return $this->boost3_legacy_export_icon(new pix_icon($fallbackicons[$key], '', 'core'));
+    }
+
+    /**
+     * Known-good pix icons for common settings navigation URLs.
+     *
+     * @param string $url
+     * @return array{pix: string, component: string, alt: string}|null
+     */
+    protected function boost3_legacy_fallback_icon_for_url(string $url): ?array {
+        if ($url === '') {
+            return null;
+        }
+        try {
+            $target = new moodle_url($url);
+            $path = $target->get_path(false);
+        } catch (\moodle_exception $e) {
+            return null;
+        }
+
+        $pathicons = [
+            '/user/index.php' => 'i/users',
+            '/enrol/instances.php' => 'i/users',
+            '/enrol/otherusers.php' => 'i/users',
+            '/enrol/renameroles.php' => 'i/roles',
+            '/group/index.php' => 'i/group',
+            '/group/groupings.php' => 'i/group',
+            '/group/overview.php' => 'i/group',
+            '/admin/roles/permissions.php' => 'i/permissions',
+            '/admin/roles/check.php' => 'i/permissions',
+            '/admin/roles/override.php' => 'i/permissions',
+            '/admin/roles/assign.php' => 'i/roles',
+            '/course/completion.php' => 'i/award',
+            '/filter/manage.php' => 'i/filter',
+            '/backup/backup.php' => 'i/backup',
+            '/backup/restore.php' => 'i/restore',
+            '/badges/index.php' => 'i/badge',
+            '/mod/lti/coursetools.php' => 'i/external',
+            '/report/view.php' => 'i/report',
+            '/question/edit.php' => 'i/questions',
+        ];
+
+        if (!isset($pathicons[$path])) {
+            return null;
+        }
+
+        return $this->boost3_legacy_export_icon(new pix_icon($pathicons[$path], '', 'core'));
     }
 
     /**
@@ -719,18 +787,21 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * @param array{pix: string, component: string, alt: string}|null $icon
      * @return array<string, mixed>
      */
-    protected function boost3_legacy_make_item(string $text, string $url, bool $active = false, ?array $icon = null): array {
+    protected function boost3_legacy_make_item(
+        string $text,
+        string $url,
+        bool $active = false,
+        ?array $icon = null,
+        $node = null
+    ): array {
         $item = [
             'text' => $text,
             'url' => $url,
             'active' => $active,
         ];
-        if ($icon !== null) {
-            $item['icon'] = $icon;
-            $iconhtml = $this->boost3_render_item_icon_html($icon, $text);
-            if ($iconhtml !== '') {
-                $item['iconhtml'] = $iconhtml;
-            }
+        $iconhtml = $this->boost3_resolve_item_icon_html($this->page, $url, $node, $text, $icon);
+        if ($iconhtml !== '') {
+            $item['iconhtml'] = $iconhtml;
         }
         return $item;
     }
@@ -750,18 +821,50 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             'url' => $url,
             'active' => $active,
         ];
-        $icon = null;
-        if (is_object($node)) {
-            $icon = $this->boost3_legacy_item_icon_from_node($this->page, $node);
-        }
-        if ($icon === null) {
-            $icon = $this->boost3_legacy_item_icon_from_settingsnav_url($this->page, $url);
-        }
-        $iconhtml = $this->boost3_render_item_icon_html($icon, $text);
+        $iconhtml = $this->boost3_resolve_item_icon_html($this->page, $url, $node, $text);
         if ($iconhtml !== '') {
             $item['iconhtml'] = $iconhtml;
         }
         return $item;
+    }
+
+    /**
+     * Resolve visible icon HTML for drawer/gear items (pix fallbacks over broken FA).
+     *
+     * @param moodle_page $page
+     * @param string $url
+     * @param object|null $node
+     * @param string $alttext
+     * @param array{pix: string, component: string, alt: string}|null $preficon
+     * @return string
+     */
+    protected function boost3_resolve_item_icon_html(
+        moodle_page $page,
+        string $url,
+        $node,
+        string $alttext,
+        ?array $preficon = null
+    ): string {
+        $candidates = [];
+        if ($preficon !== null) {
+            $candidates[] = $preficon;
+        }
+        if (is_object($node) && !empty($node->key)) {
+            $candidates[] = $this->boost3_legacy_fallback_icon_for_key($node->key);
+        }
+        $candidates[] = $this->boost3_legacy_fallback_icon_for_url($url);
+        if (is_object($node)) {
+            $candidates[] = $this->boost3_legacy_item_icon_from_node($page, $node);
+        }
+        $candidates[] = $this->boost3_legacy_item_icon_from_settingsnav_url($page, $url);
+
+        foreach ($candidates as $icon) {
+            $html = $this->boost3_render_item_icon_html($icon, $alttext);
+            if ($html !== '') {
+                return $html;
+            }
+        }
+        return '';
     }
 
     /**
@@ -773,11 +876,38 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         if ($icon === null || empty($icon['pix'])) {
             return '';
         }
-        return $this->pix_icon(
+        $html = $this->pix_icon(
             $icon['pix'],
             $icon['alt'] ?? $alttext,
             $icon['component'] ?? 'core'
         );
+        return $this->boost3_icon_html_is_visible($html) ? $html : '';
+    }
+
+    /**
+     * Whether rendered pix_icon HTML shows a real glyph (not empty/broken FA).
+     *
+     * @param string $html
+     * @return bool
+     */
+    protected function boost3_icon_html_is_visible(string $html): bool {
+        if (trim($html) === '') {
+            return false;
+        }
+        if (strpos($html, 'fa-fw fa-fw') !== false) {
+            return false;
+        }
+        if (preg_match('/class="[^"]*fa-fw\s+"/', $html)) {
+            return false;
+        }
+        if (strpos($html, '<img ') !== false) {
+            return true;
+        }
+        // Require a named FA glyph, not bare fa-fw placeholders.
+        if (preg_match('/\bfa-(?!fw\b)[a-z0-9-]+/', $html)) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -998,7 +1128,8 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                 $this->boost3_plain_nav_label($label, 0),
                 $plainurl,
                 $this->boost3_active_resolver()->from_nav_node(!empty($node->isactive), $plainurl),
-                $this->boost3_legacy_item_icon_from_node($this->page, $node)
+                null,
+                $node
             );
         }
     }
@@ -1032,7 +1163,8 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                         $this->boost3_plain_nav_label($label, 0),
                         $plainurl,
                         $this->boost3_active_resolver()->mycourses_item(!empty($child->isactive), $plainurl),
-                        $this->boost3_legacy_item_icon_from_node($this->page, $child)
+                        null,
+                        $child
                     );
                 }
                 continue;
