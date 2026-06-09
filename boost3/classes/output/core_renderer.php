@@ -771,6 +771,10 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         if ($pix === '' || $pix === 'spacer' || $pix === 'i/none') {
             return false;
         }
+        // Moodle default for unnamed nav nodes; renders as generic fa-gear.
+        if ($pix === 'i/navigationitem') {
+            return false;
+        }
         return true;
     }
 
@@ -859,10 +863,10 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $candidates[] = $this->boost3_legacy_fallback_icon_for_key($node->key);
         }
         $candidates[] = $this->boost3_legacy_fallback_icon_for_url($url);
-        $candidates[] = $this->boost3_legacy_export_icon(new pix_icon('i/navigationitem', '', 'core'));
+        $candidates[] = $this->boost3_legacy_export_icon(new pix_icon('i/next', '', 'core'));
 
         foreach ($candidates as $icon) {
-            $html = $this->boost3_render_item_icon_html($icon, $alttext);
+            $html = $this->boost3_render_item_icon_html($icon, $alttext, $url);
             if ($html !== '') {
                 return $html;
             }
@@ -873,28 +877,39 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     /**
      * @param array{pix: string, component: string, alt: string}|null $icon
      * @param string $alttext
+     * @param string $itemurl
      * @return string
      */
-    protected function boost3_render_item_icon_html(?array $icon, string $alttext): string {
+    protected function boost3_render_item_icon_html(?array $icon, string $alttext, string $itemurl = ''): string {
         if ($icon === null || empty($icon['pix'])) {
             return '';
         }
+        $pix = $icon['pix'];
         $html = $this->pix_icon(
-            $icon['pix'],
+            $pix,
             $icon['alt'] ?? $alttext,
             $icon['component'] ?? 'core'
         );
-        return $this->boost3_icon_html_is_visible($html) ? $html : '';
+        return $this->boost3_icon_html_is_visible($html, $pix, $itemurl) ? $html : '';
     }
 
     /**
      * Whether rendered pix_icon HTML shows a real glyph (not empty/broken FA).
      *
      * @param string $html
+     * @param string $pix
+     * @param string $itemurl
      * @return bool
      */
-    protected function boost3_icon_html_is_visible(string $html): bool {
+    protected function boost3_icon_html_is_visible(string $html, string $pix = '', string $itemurl = ''): bool {
         if (trim($html) === '') {
+            return false;
+        }
+        if ($pix === 'i/navigationitem') {
+            return false;
+        }
+        // Moodle reuses fa-gear for i/settings on many admin links; keep only for course settings.
+        if (preg_match('/\bfa-(gear|cog)\b/', $html) && !$this->boost3_icon_url_allows_settings_gear($itemurl)) {
             return false;
         }
         // Broken FA mapping from some navigation nodes (no glyph name).
@@ -921,6 +936,23 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             return true;
         }
         return false;
+    }
+
+    /**
+     * fa-gear is intentional only for the course settings page.
+     *
+     * @param string $url
+     * @return bool
+     */
+    protected function boost3_icon_url_allows_settings_gear(string $url): bool {
+        if ($url === '') {
+            return false;
+        }
+        try {
+            return (new moodle_url($url))->get_path(false) === '/course/edit.php';
+        } catch (\moodle_exception $e) {
+            return false;
+        }
     }
 
     /**
