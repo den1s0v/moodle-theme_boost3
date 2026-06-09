@@ -65,7 +65,8 @@ body.theme-boost3-legacy-drawer {
     }
 }
 
-.navbar .theme-boost3-legacy-nav-toggle.btn {
+// Navbar toggle must stay fixed; theme_boost/drawers displace() sets inline transform on open buttons.
+.navbar.fixed-top .theme-boost3-legacy-nav-toggle.btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -75,6 +76,8 @@ body.theme-boost3-legacy-drawer {
     background: transparent;
     box-shadow: none;
     line-height: 1;
+    transform: none !important;
+    flex-shrink: 0;
 
     &:hover,
     &:focus {

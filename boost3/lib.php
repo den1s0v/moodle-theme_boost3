@@ -66,10 +66,30 @@ function theme_boost3_legacy_drawer_active_for_page(moodle_page $page): bool {
     if (in_array($page->pagelayout, ['popup', 'embedded', 'maintenance', 'redirect'], true)) {
         return false;
     }
-    if (theme_boost3_page_is_admin_page($page)) {
+    if (theme_boost3_page_is_site_admin_page($page)) {
         return false;
     }
     return true;
+}
+
+/**
+ * Whether the page is site administration UI (not course settings / course tools).
+ *
+ * @param moodle_page $page
+ * @return bool
+ */
+function theme_boost3_page_is_site_admin_page(moodle_page $page): bool {
+    $pagetype = $page->pagetype ?? '';
+    if ($pagetype !== '' && strpos($pagetype, 'admin-') === 0) {
+        return true;
+    }
+    if ($page->url instanceof moodle_url) {
+        $path = $page->url->get_path(false);
+        if ($path === '/admin' || strpos($path, '/admin/') === 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**

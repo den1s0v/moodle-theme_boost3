@@ -377,6 +377,12 @@ require(['jquery'], function($) {
     };
     drawer.addEventListener('theme_boost/drawers:shown', () => syncToggle(true));
     drawer.addEventListener('theme_boost/drawers:hidden', () => syncToggle(false));
+
+    const resetNavToggleTransform = () => {
+        btn.style.transform = '';
+    };
+    window.addEventListener('scroll', resetNavToggleTransform, {passive: true});
+    document.addEventListener('scroll', resetNavToggleTransform, {passive: true});
 });
 {{/boost3_legacy_drawer}}
 {{/js}}
