@@ -5,7 +5,7 @@
 
     Context variables:
     - arialabel string Accessible label for the nav landmark
-    - sections array of { title, items[] } where items are { text, url, active } or { text, isheader }
+    - sections array of { title, items[] } where items are { text, url, active, icon? } or { text, isheader }
 }}
 <nav class="theme-boost3-legacy-nav list-group list-group-flush" aria-label="{{arialabel}}">
     {{#sections}}
@@ -17,7 +17,18 @@
                 <div class="list-group-item theme-boost3-legacy-nav-heading">{{text}}</div>
             {{/isheader}}
             {{^isheader}}
-                <a class="list-group-item list-group-item-action{{#active}} active{{/active}}" href="{{url}}">{{text}}</a>
+                <a class="list-group-item list-group-item-action{{#active}} active{{/active}}" href="{{url}}">
+                    <div class="ml-0">
+                        <div class="media">
+                            {{#icon.pix}}
+                            <span class="media-left">
+                                {{#pix}}{{{icon.pix}}}, {{{icon.component}}}, {{{icon.alt}}}{{/pix}}
+                            </span>
+                            {{/icon.pix}}
+                            <span class="media-body">{{text}}</span>
+                        </div>
+                    </div>
+                </a>
             {{/isheader}}
         {{/items}}
     {{/sections}}

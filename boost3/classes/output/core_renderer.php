@@ -30,6 +30,7 @@ use core\url as core_url;
 use moodle_page;
 use moodle_url;
 use navigation_node;
+use pix_icon;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -443,11 +444,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             (property_exists($node, 'text') ? (string) $node->text : '');
 
         if ($url !== null && $label !== '' && !$this->boost3_items_has_url($items, $url)) {
-            $items[] = [
-                'text' => $this->boost3_plain_nav_label($label, 0),
-                'url' => $url,
-                'active' => !empty($node->isactive),
-            ];
+            $items[] = $this->boost3_legacy_make_item(
+                $this->boost3_plain_nav_label($label, 0),
+                $url,
+                !empty($node->isactive),
+                $this->boost3_legacy_item_icon_from_node($this->page, $node)
+            );
             return;
         }
 
@@ -463,11 +465,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                 if ($childurl === null || $childlabel === '' || $this->boost3_items_has_url($items, $childurl)) {
                     continue;
                 }
-                $items[] = [
-                    'text' => $this->boost3_plain_nav_label($childlabel, 0),
-                    'url' => $childurl,
-                    'active' => !empty($child->isactive),
-                ];
+                $items[] = $this->boost3_legacy_make_item(
+                    $this->boost3_plain_nav_label($childlabel, 0),
+                    $childurl,
+                    !empty($child->isactive),
+                    $this->boost3_legacy_item_icon_from_node($this->page, $child)
+                );
             }
         }
     }
@@ -527,6 +530,84 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
+     * Export a pix_icon for legacy_nav_drawer mustache (same shape as Boost flat_navigation).
+     *
+     * @param pix_icon|null $icon
+     * @return array{pix: string, component: string, alt: string}|null
+     */
+    protected function boost3_legacy_export_icon(?pix_icon $icon): ?array {
+        if (!$icon instanceof pix_icon || $icon->pix === '') {
+            return null;
+        }
+
+        $data = $icon->export_for_pix();
+        $component = $data['component'] ?? 'core';
+        if ($component === 'moodle') {
+            $component = 'core';
+        }
+
+        return [
+            'pix' => $data['key'],
+            'component' => $component,
+            'alt' => $data['title'] ?? '',
+        ];
+    }
+
+    /**
+     * Resolve icon metadata from a navigation node (with settingsnav/navigation fallback by key).
+     *
+     * @param moodle_page $page
+     * @param object|null $node
+     * @return array{pix: string, component: string, alt: string}|null
+     */
+    protected function boost3_legacy_item_icon_from_node(moodle_page $page, $node): ?array {
+        if (!is_object($node) || !empty($node->hideicon)) {
+            return null;
+        }
+
+        if ($node->icon instanceof pix_icon) {
+            return $this->boost3_legacy_export_icon($node->icon);
+        }
+
+        if (empty($node->key)) {
+            return null;
+        }
+
+        foreach ([$page->settingsnav, $page->navigation] as $tree) {
+            if (!$tree) {
+                continue;
+            }
+            $match = $tree->find($node->key, null);
+            if (is_object($match) && empty($match->hideicon) && $match->icon instanceof pix_icon) {
+                return $this->boost3_legacy_export_icon($match->icon);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Build one legacy drawer item array.
+     *
+     * @param string $text
+     * @param string $url
+     * @param bool $active
+     * @param array{pix: string, component: string, alt: string}|null $icon
+     * @return array<string, mixed>
+     */
+    protected function boost3_legacy_make_item(string $text, string $url, bool $active = false, ?array $icon = null): array {
+        $item = [
+            'text' => $text,
+            'url' => $url,
+            'active' => $active,
+        ];
+        if ($icon !== null) {
+            $item['icon'] = $icon;
+        }
+        return $item;
+    }
+
+    /**
      * Course block: home, secondary tabs, section links (topics/weeks only).
      *
      * @param moodle_page $page
@@ -537,11 +618,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         $course = $page->course;
 
         $homeurl = (new moodle_url('/course/view.php', ['id' => $course->id]))->out(false);
-        $items[] = [
-            'text' => format_string($course->fullname, true, ['context' => context_course::instance($course->id)]),
-            'url' => $homeurl,
-            'active' => $page->pagetype === 'course-view',
-        ];
+        $items[] = $this->boost3_legacy_make_item(
+            format_string($course->fullname, true, ['context' => context_course::instance($course->id)]),
+            $homeurl,
+            $page->pagetype === 'course-view',
+            $this->boost3_legacy_export_icon(new pix_icon('i/course', ''))
+        );
 
         if ($page->has_secondary_navigation() && $page->secondarynav) {
             foreach ($page->secondarynav->children as $child) {
@@ -593,11 +675,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                 continue;
             }
             $sectionurl = new moodle_url('/course/section.php', ['id' => $sectionrecord->id]);
-            $items[] = [
-                'text' => $name,
-                'url' => $sectionurl->out(false),
-                'active' => ($currentsection !== null && (int) $currentsection === (int) $sectionnum),
-            ];
+            $items[] = $this->boost3_legacy_make_item(
+                $name,
+                $sectionurl->out(false),
+                ($currentsection !== null && (int) $currentsection === (int) $sectionnum),
+                $this->boost3_legacy_export_icon(new pix_icon('i/section', ''))
+            );
         }
 
         return $items;
@@ -677,11 +760,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
 
         $plainurl = $url;
         if (!$this->boost3_items_has_url($items, $plainurl)) {
-            $items[] = [
-                'text' => $this->boost3_plain_nav_label($label, 0),
-                'url' => $plainurl,
-                'active' => !empty($node->isactive),
-            ];
+            $items[] = $this->boost3_legacy_make_item(
+                $this->boost3_plain_nav_label($label, 0),
+                $plainurl,
+                !empty($node->isactive),
+                $this->boost3_legacy_item_icon_from_node($this->page, $node)
+            );
         }
     }
 
@@ -710,11 +794,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             if ($url !== null && $label !== '') {
                 $plainurl = $url;
                 if (!$this->boost3_items_has_url($items, $plainurl)) {
-                    $items[] = [
-                        'text' => $this->boost3_plain_nav_label($label, 0),
-                        'url' => $plainurl,
-                        'active' => !empty($child->isactive),
-                    ];
+                    $items[] = $this->boost3_legacy_make_item(
+                        $this->boost3_plain_nav_label($label, 0),
+                        $plainurl,
+                        !empty($child->isactive),
+                        $this->boost3_legacy_item_icon_from_node($this->page, $child)
+                    );
                 }
                 continue;
             }
