@@ -447,7 +447,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $items[] = $this->boost3_legacy_make_item(
                 $this->boost3_plain_nav_label($label, 0),
                 $url,
-                !empty($node->isactive),
+                $this->boost3_legacy_resolve_active(!empty($node->isactive), $url),
                 $this->boost3_legacy_item_icon_from_node($this->page, $node)
             );
             return;
@@ -468,7 +468,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                 $items[] = $this->boost3_legacy_make_item(
                     $this->boost3_plain_nav_label($childlabel, 0),
                     $childurl,
-                    !empty($child->isactive),
+                    $this->boost3_legacy_resolve_active(!empty($child->isactive), $childurl),
                     $this->boost3_legacy_item_icon_from_node($this->page, $child)
                 );
             }
@@ -527,6 +527,41 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             }
         }
         return false;
+    }
+
+    /**
+     * Whether a drawer item URL matches the current page (ignoring URL fragment).
+     *
+     * @param string $url
+     * @return bool
+     */
+    protected function boost3_legacy_url_matches_current(string $url): bool {
+        global $PAGE;
+
+        if (!$PAGE->url instanceof moodle_url) {
+            return false;
+        }
+
+        try {
+            $target = new moodle_url($url);
+            return $target->compare($PAGE->url, URL_MATCH_BASE);
+        } catch (\moodle_exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Resolve legacy drawer active state from navigation node flag or current URL.
+     *
+     * @param bool $nodeactive
+     * @param string $url
+     * @return bool
+     */
+    protected function boost3_legacy_resolve_active(bool $nodeactive, string $url): bool {
+        if ($nodeactive) {
+            return true;
+        }
+        return $this->boost3_legacy_url_matches_current($url);
     }
 
     /**
@@ -621,7 +656,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         $items[] = $this->boost3_legacy_make_item(
             format_string($course->fullname, true, ['context' => context_course::instance($course->id)]),
             $homeurl,
-            $page->pagetype === 'course-view',
+            $this->boost3_legacy_resolve_active($page->pagetype === 'course-view', $homeurl),
             $this->boost3_legacy_export_icon(new pix_icon('i/course', ''))
         );
 
@@ -655,12 +690,10 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         $course = $page->course;
         $modinfo = get_fast_modinfo($course);
         $items = [];
-        $currentsection = null;
-        if ($page->context->contextlevel == CONTEXT_COURSE) {
-            $sectionnum = optional_param('section', null, PARAM_INT);
-            if ($sectionnum !== null) {
-                $currentsection = $sectionnum;
-            }
+        $linkmode = theme_boost3_legacy_drawer_section_link_mode();
+        $viewsection = null;
+        if ($page->pagetype === 'course-view') {
+            $viewsection = optional_param('section', null, PARAM_INT);
         }
 
         $sectionrecords = $DB->get_records('course_sections', ['course' => $course->id], 'section ASC');
@@ -674,11 +707,25 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             if ($name === '') {
                 continue;
             }
-            $sectionurl = new moodle_url('/course/section.php', ['id' => $sectionrecord->id]);
+
+            if ($linkmode === 'anchor') {
+                $sectionurl = new moodle_url('/course/view.php', ['id' => $course->id], 'section-' . $sectionnum);
+                $isactive = ($page->pagetype === 'course-view'
+                    && $viewsection !== null
+                    && (int) $viewsection === $sectionnum);
+            } else {
+                $sectionurl = new moodle_url('/course/section.php', ['id' => $sectionrecord->id]);
+                $sectionurlout = $sectionurl->out(false);
+                $isactive = $this->boost3_legacy_url_matches_current($sectionurlout);
+                if (!$isactive && $viewsection !== null) {
+                    $isactive = ((int) $viewsection === $sectionnum);
+                }
+            }
+
             $items[] = $this->boost3_legacy_make_item(
                 $name,
                 $sectionurl->out(false),
-                ($currentsection !== null && (int) $currentsection === (int) $sectionnum),
+                $isactive,
                 $this->boost3_legacy_export_icon(new pix_icon('i/section', ''))
             );
         }
@@ -694,9 +741,8 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      */
     protected function boost3_legacy_build_site_section(moodle_page $page): array {
         $items = [];
-        $sitekeys = ['myhome', 'home', 'calendar', 'privatefiles', 'contentbank'];
 
-        foreach ($sitekeys as $key) {
+        foreach (theme_boost3_legacy_drawer_site_keys() as $key) {
             $node = $page->navigation->find($key, null);
             if (!is_object($node)) {
                 continue;
@@ -763,7 +809,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $items[] = $this->boost3_legacy_make_item(
                 $this->boost3_plain_nav_label($label, 0),
                 $plainurl,
-                !empty($node->isactive),
+                $this->boost3_legacy_resolve_active(!empty($node->isactive), $plainurl),
                 $this->boost3_legacy_item_icon_from_node($this->page, $node)
             );
         }
@@ -797,7 +843,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                     $items[] = $this->boost3_legacy_make_item(
                         $this->boost3_plain_nav_label($label, 0),
                         $plainurl,
-                        !empty($child->isactive),
+                        $this->boost3_legacy_resolve_active(!empty($child->isactive), $plainurl),
                         $this->boost3_legacy_item_icon_from_node($this->page, $child)
                     );
                 }

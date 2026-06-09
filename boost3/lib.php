@@ -51,6 +51,41 @@ function theme_boost3_legacy_drawer_enabled(): bool {
 }
 
 /**
+ * Navigation node keys for the legacy drawer site section (one per line or comma-separated).
+ *
+ * @return string[]
+ */
+function theme_boost3_legacy_drawer_site_keys(): array {
+    $raw = get_config('theme_boost3', 'legacydrawersitekeys');
+    if ($raw === false || trim((string) $raw) === '') {
+        return ['home', 'contentbank'];
+    }
+
+    $keys = [];
+    foreach (preg_split('/[\s,]+/', (string) $raw, -1, PREG_SPLIT_NO_EMPTY) as $key) {
+        $key = clean_param($key, PARAM_ALPHANUMEXT);
+        if ($key !== '') {
+            $keys[] = $key;
+        }
+    }
+
+    return $keys ?: ['home', 'contentbank'];
+}
+
+/**
+ * How legacy drawer builds links to course sections.
+ *
+ * @return string sectionpage|anchor
+ */
+function theme_boost3_legacy_drawer_section_link_mode(): string {
+    $mode = get_config('theme_boost3', 'legacydrawersectionlinks');
+    if ($mode === 'anchor') {
+        return 'anchor';
+    }
+    return 'sectionpage';
+}
+
+/**
  * Whether the legacy left drawer should render on this page.
  *
  * @param moodle_page $page

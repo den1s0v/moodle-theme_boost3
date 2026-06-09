@@ -42,10 +42,15 @@ body.theme-boost3-legacy-drawer {
             }
 
             &.active {
-                background-color: #e7f0fa;
-                color: #0f6cbf;
+                background-color: $primary;
+                color: $white;
                 font-weight: 600;
-                border-color: rgba(0, 0, 0, 0.125);
+                border-color: $primary;
+
+                .icon,
+                .media-left .icon {
+                    color: $white;
+                }
             }
         }
 

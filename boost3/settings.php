@@ -38,4 +38,21 @@ if ($ADMIN->fulltree) {
     $description = get_string('enablelegacydrawer_desc', 'theme_boost3');
     $setting = new admin_setting_configcheckbox($name, $title, $description, 0);
     $settings->add($setting);
+
+    $name = 'theme_boost3/legacydrawersitekeys';
+    $title = get_string('legacydrawersitekeys', 'theme_boost3');
+    $description = get_string('legacydrawersitekeys_desc', 'theme_boost3');
+    $default = "home\ncontentbank";
+    $setting = new admin_setting_configtextarea($name, $title, $description, $default, PARAM_RAW, 5, 40);
+    $settings->add($setting);
+
+    $name = 'theme_boost3/legacydrawersectionlinks';
+    $title = get_string('legacydrawersectionlinks', 'theme_boost3');
+    $description = get_string('legacydrawersectionlinks_desc', 'theme_boost3');
+    $choices = [
+        'sectionpage' => get_string('legacydrawersectionlinks_sectionpage', 'theme_boost3'),
+        'anchor' => get_string('legacydrawersectionlinks_anchor', 'theme_boost3'),
+    ];
+    $setting = new admin_setting_configselect($name, $title, $description, 'sectionpage', $choices);
+    $settings->add($setting);
 }
