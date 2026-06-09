@@ -63,4 +63,25 @@ if ($ADMIN->fulltree) {
     $default = "editsettings\nparticipants\ncompetencies\ngrades";
     $setting = new admin_setting_configtextarea($name, $title, $description, $default, PARAM_RAW, 8, 50);
     $settings->add($setting);
+
+    $name = 'theme_boost3/legacydrawercoursekeyaliases';
+    $title = get_string('legacydrawercoursekeyaliases', 'theme_boost3');
+    $description = get_string('legacydrawercoursekeyaliases_desc', 'theme_boost3');
+    $default = "editsettings=editsettings,settings,courseedit\nparticipants=participants,users\ngrades=grades,gradeadmin,gradebooksetup\ncompetencies=competencies,competency";
+    $setting = new admin_setting_configtextarea($name, $title, $description, $default, PARAM_RAW, 6, 50);
+    $settings->add($setting);
+
+    $name = 'theme_boost3/legacydrawersectionformats';
+    $title = get_string('legacydrawersectionformats', 'theme_boost3');
+    $description = get_string('legacydrawersectionformats_desc', 'theme_boost3');
+    $default = 'topics, weeks';
+    $setting = new admin_setting_configtextarea($name, $title, $description, $default, PARAM_RAW, 2, 40);
+    $settings->add($setting);
+
+    $name = 'theme_boost3/legacydrawergearexcludedkeys';
+    $title = get_string('legacydrawergearexcludedkeys', 'theme_boost3');
+    $description = get_string('legacydrawergearexcludedkeys_desc', 'theme_boost3');
+    $default = 'coursehome, questionbank, coursereports';
+    $setting = new admin_setting_configtextarea($name, $title, $description, $default, PARAM_RAW, 3, 40);
+    $settings->add($setting);
 }

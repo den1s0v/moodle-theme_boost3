@@ -33,6 +33,9 @@ body.theme-boost3-legacy-drawer {
             .media-body {
                 flex: 1 1 auto;
                 min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
 
             &:hover,

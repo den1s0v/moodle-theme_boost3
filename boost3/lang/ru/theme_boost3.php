@@ -28,7 +28,7 @@ $string['pluginname'] = 'Boost3 (дочерняя тема Boost Union)';
 $string['gearmenu'] = 'Меню курса';
 $string['gearmenudesc'] = 'Действия курса и страницы (как старое меню-шестерёнка)';
 $string['enablegearmenu'] = 'Меню-шестерёнка (как в Moodle 3.9)';
-$string['enablegearmenu_desc'] = 'Если включено, вкладки курса и подразделы собираются в меню-шестерёнку. Если выключено, используется стандартная горизонтальная навигация Boost и выпадающий tertiary. После смены настройки очистите кэши.';
+$string['enablegearmenu_desc'] = 'Если включено, вкладки курса и подразделы собираются в меню-шестерёнку. Если выключено, используется стандартная горизонтальная навигация Boost и выпадающий tertiary — кроме страниц с legacy drawer: вкладки, не попавшие в панель, автоматически показываются в шестерёнке, чтобы ничего не пропало. После смены настройки очистите кэши.';
 $string['enablelegacydrawer'] = 'Левая панель навигации (как в Moodle 3.9)';
 $string['enablelegacydrawer_desc'] = 'Если включено, левая панель показывает плоский список ссылок курса, сайта и «Мои курсы» вместо дерева активностей. Горизонтальные вкладки курса переносятся в панель. После смены настройки очистите кэши.';
 $string['legacydrawernav'] = 'Навигация по курсу и сайту';
@@ -58,3 +58,9 @@ coursetools — LTI / внешние инструменты
 backup — Резервное копирование
 coursehome — Главная курса (обычно не нужен: название курса уже в панели)
 Плагины могут добавлять свои ключи — при необходимости смотрите $PAGE->secondarynav на вашем сайте.';
+$string['legacydrawercoursekeyaliases'] = 'Алиасы ключей вкладок курса';
+$string['legacydrawercoursekeyaliases_desc'] = 'Соответствие настроенных ключей drawer альтернативным ключам secondary navigation на вашем сайте. Одна строка на канонический ключ: canonical=alias1,alias2. Объединяется со встроенными значениями по умолчанию.';
+$string['legacydrawersectionformats'] = 'Форматы курса со списком разделов';
+$string['legacydrawersectionformats_desc'] = 'Имена форматов курса через запятую или пробел (например topics, weeks), для которых в legacy drawer показываются плоские ссылки на разделы. Для остальных форматов — только вкладки курса.';
+$string['legacydrawergearexcludedkeys'] = 'Исключённые ключи для gear overflow';
+$string['legacydrawergearexcludedkeys_desc'] = 'Ключи secondary navigation, для которых поддеревья settings navigation не используются как источник overflow в шестерёнке (через запятую или пробел). По умолчанию: coursehome, questionbank, coursereports.';

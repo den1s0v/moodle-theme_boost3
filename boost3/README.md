@@ -1,42 +1,63 @@
-# theme_boost3: making Moodle 4.5 look a bit like Moodle 3.9+.
+# theme_boost3
 
-Grandchild theme of **Boost Union** with an optional consolidated **gear-style** menu for course navigation.
-
-## Install
-
-1. Copy this folder into your Moodle tree as `theme/boost3/` (folder name **`boost3`**, component **`theme_boost3`**).
-2. Ensure **Boost Union** is installed under `theme/boost_union/`.
-3. Purge caches (required after upgrades), then set **Boost3** as the site theme in *Site administration → Appearance → Themes*.
-
-After updating theme files, run **Purge all caches** or `php admin/cli/purge_caches.php` so Mustache/SCSS changes apply.
+Child theme of **Boost Union** for Moodle **4.5**. Brings Moodle 3.9-style **legacy left drawer** and **gear menu** while keeping Boost Union features.
 
 ## Requirements
 
-- Moodle 4.5.x (matches `version.php` `requires` / `supported`).
-- `theme_boost_union` MOODLE_405_STABLE (or compatible).
+- Moodle 4.5.x
+- Parent theme: `theme_boost_union`
 
-## Theme settings
+Install as `moodle/theme/boost3/`. Set as default theme. **Purge all caches** after install or upgrade.
 
-*Site administration → Appearance → Themes → Boost3 settings*
+## Navigation features (both default **off**)
 
-| Setting | Description |
-|---------|-------------|
-| **Gear-style course menu** | When enabled (default), Boost3 navigation behaviour below applies. When disabled, the site uses standard Boost horizontal secondary tabs and the tertiary `url_select` with no gear menu. Purge caches after toggling. |
+| Setting | Purpose |
+|---------|---------|
+| **Legacy left navigation drawer** | Flat course / site / my courses list instead of activity tree |
+| **Gear-style course menu** | Consolidates secondary tabs and tertiary overflow |
 
-## Navigation behaviour (gear menu enabled)
+### Behaviour matrix
 
-| Page type | Course tabs (secondary) | Gear menu |
-|-----------|-------------------------|-----------|
-| Site **administration** (`/admin/…`) | Standard horizontal tabs | Hidden |
-| **Course** pages (home, modules, etc.) | In the gear menu (inline next to the course title) | Course tabs (Курс, Участники, …) |
-| **Course subsection** with tertiary nav (e.g. Enrolled users, Groups) | Standard horizontal tabs | Section links (former `tertiary-navigation` dropdown) |
+| Legacy | Gear | Secondary tabs | Course tabs not in drawer whitelist |
+|--------|------|----------------|-------------------------------------|
+| off | off | Standard Boost | In horizontal tabs |
+| off | on | Hidden on simple pages; gear or overflow | In gear |
+| on | on | Hidden | Drawer + gear (excluded tabs) |
+| on | off | Hidden | **Automatic gear fallback** — excluded tabs still reachable |
 
-On subsection pages the default `tertiary-navigation` url_select block is hidden; those links appear in the gear menu instead (with group headers, matching core `participants_action_bar`). Action buttons in the participants action bar (e.g. **Enrol users**) stay visible next to the gear menu.
+Project decision: with legacy drawer on, horizontal secondary tabs are hidden. Tabs not listed in `legacydrawercoursekeys` must not disappear — gear is **effectively enabled** for those pages even when the gear setting is off.
 
-Pages in the **Participants** section (including `/enrol/renameroles.php`, role permissions, groups, etc.) are detected via the course `users` settings navigation subtree, not only a fixed URL list.
+## Key settings
 
-## Notes
+- **legacydrawercoursekeys** — secondary nav keys in the drawer (default: editsettings, participants, competencies, grades)
+- **legacydrawercoursekeyaliases** — map keys to site-specific node names (`canonical=alias1,alias2`)
+- **legacydrawersitekeys** — global_navigation keys for site block (default: home, contentbank)
+- **legacydrawersectionformats** — formats that get flat section links (default: topics, weeks)
+- **legacydrawersectionlinks** — `sectionpage` or `anchor`
+- **legacydrawergearexcludedkeys** — keys skipped for settingsnav overflow in gear
 
-- Configure colours, drawers, and most behaviour in **Boost Union**; this theme adds the gear menu and related SCSS only (not on admin pages).
-- The gear icon is an inline SVG in `templates/theme_boost3/gear_menu.mustache` (Bootstrap Icons gear-fill, `currentColor` for styling in `scss/post.scss`).
-- If you deploy from this repo, rename or symlink `boost3/` → `moodle/theme/boost3/` on the server.
+See language strings in theme settings for the full key catalog.
+
+## Architecture (reliability)
+
+- **`classes/navigation_policy.php`** — single policy for drawer / gear / tabs visibility per page kind
+- **`classes/active_state_resolver.php`** — unified active highlighting (course home vs section vs my courses)
+- **`lib.php`** — settings parsers, page classification helpers, template flags
+- **`classes/output/core_renderer.php`** — builds drawer and gear item trees only
+
+## Forked Union templates
+
+These files override Boost Union / Boost — review on every Union upgrade:
+
+- `templates/theme_boost/drawers.mustache`
+- `templates/theme_boost/navbar.mustache`
+- `layout/drawers.php`
+
+Boost3-specific fragments: `templates/theme_boost3/*`, `amd/src/legacy_drawer_toggle.js`.
+
+Regression steps: [docs/REGRESSION-CHECKLIST.md](docs/REGRESSION-CHECKLIST.md)  
+Design notes: [docs/plan-left-drawer-m39.md](docs/plan-left-drawer-m39.md)
+
+## Development
+
+Version bump in `version.php` triggers Moodle upgrade and SCSS rebuild. Purge caches after template or AMD changes.

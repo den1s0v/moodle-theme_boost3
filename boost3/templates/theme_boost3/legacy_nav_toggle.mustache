@@ -1,0 +1,32 @@
+{{!
+    @template theme_boost3/legacy_nav_toggle
+
+    Hamburger button for the legacy left navigation drawer.
+    Shown only when boost3_legacy_nav_toggle is true (drawer has content).
+
+    Context variables:
+    * courseindexopen bool Whether the drawer is open on load
+}}
+<button
+    class="btn icon-no-margin aabtn theme-boost3-legacy-nav-toggle d-block px-2 my-1 border-0 me-2"
+    data-toggler="drawers"
+    data-action="toggle"
+    data-target="theme_boost-drawers-courseindex"
+    aria-controls="theme_boost-drawers-courseindex"
+    aria-expanded="{{#courseindexopen}}true{{/courseindexopen}}{{^courseindexopen}}false{{/courseindexopen}}"
+    data-placement="bottom"
+    data-boost3-drawer-title-open="{{#str}}legacydrawertoggleopen, theme_boost3{{/str}}"
+    data-boost3-drawer-title-close="{{#str}}legacydrawertoggleclose, theme_boost3{{/str}}"
+    {{#courseindexopen}}
+    title="{{#str}}legacydrawertoggleclose, theme_boost3{{/str}}"
+    {{/courseindexopen}}
+    {{^courseindexopen}}
+    title="{{#str}}legacydrawertoggleopen, theme_boost3{{/str}}"
+    {{/courseindexopen}}
+>
+    <i class="icon fa fa-bars fa-fw" aria-hidden="true"></i>
+    <span class="visually-hidden">
+        {{#courseindexopen}}{{#str}}legacydrawertoggleclose, theme_boost3{{/str}}{{/courseindexopen}}
+        {{^courseindexopen}}{{#str}}legacydrawertoggleopen, theme_boost3{{/str}}{{/courseindexopen}}
+    </span>
+</button>

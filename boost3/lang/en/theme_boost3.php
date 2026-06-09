@@ -28,7 +28,7 @@ $string['pluginname'] = 'Boost3 (Boost Union child)';
 $string['gearmenu'] = 'Course menu';
 $string['gearmenudesc'] = 'Course and page actions (similar to the old gear menu)';
 $string['enablegearmenu'] = 'Gear-style course menu (Moodle 3.9 style)';
-$string['enablegearmenu_desc'] = 'When enabled, course tabs and section links are consolidated in a gear menu. When disabled, standard Boost horizontal tabs and the tertiary url_select are used. Purge caches after changing this setting.';
+$string['enablegearmenu_desc'] = 'When enabled, course tabs and section links are consolidated in a gear menu. When disabled, standard Boost horizontal tabs and the tertiary url_select are used — except on pages with the legacy drawer: excluded course tabs are still shown in an automatic gear fallback so no tab disappears. Purge caches after changing this setting.';
 $string['enablelegacydrawer'] = 'Legacy left navigation drawer (Moodle 3.9 style)';
 $string['enablelegacydrawer_desc'] = 'When enabled, the left drawer shows flat course, site and my courses links instead of the activity tree. Secondary tabs move into the drawer. Purge caches after changing this setting.';
 $string['legacydrawernav'] = 'Course and site navigation';
@@ -58,3 +58,9 @@ coursetools — LTI / external tools
 backup — Backup and restore
 coursehome — Course home (usually omitted; course title is shown separately)
 Plugins may add more keys — inspect $PAGE->secondarynav on your site if needed.';
+$string['legacydrawercoursekeyaliases'] = 'Course tab key aliases';
+$string['legacydrawercoursekeyaliases_desc'] = 'Optional mapping from configured drawer keys to alternate secondary navigation node keys on your site. One line per canonical key: canonical=alias1,alias2. Merged with built-in defaults when a line is omitted.';
+$string['legacydrawersectionformats'] = 'Course formats with section links';
+$string['legacydrawersectionformats_desc'] = 'Comma- or space-separated course format plugin names (e.g. topics, weeks) for which flat section links appear in the legacy drawer. Other formats show course tabs only.';
+$string['legacydrawergearexcludedkeys'] = 'Gear overflow excluded keys';
+$string['legacydrawergearexcludedkeys_desc'] = 'Secondary navigation keys for which settings navigation subtrees are not used as gear overflow sources (comma- or space-separated). Default: coursehome, questionbank, coursereports.';

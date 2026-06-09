@@ -24,6 +24,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once(__DIR__ . '/classes/navigation_policy.php');
+require_once(__DIR__ . '/classes/active_state_resolver.php');
+
 /**
  * Whether the Moodle-3-style gear navigation is enabled in theme settings.
  *
@@ -115,15 +118,118 @@ function theme_boost3_legacy_drawer_course_keys(): array {
  * @param string $key Configured drawer key.
  * @return string[]
  */
+function theme_boost3_parse_key_alias_map(string $configname): array {
+    $raw = get_config('theme_boost3', $configname);
+    if ($raw === false || trim((string) $raw) === '') {
+        return [];
+    }
+
+    $map = [];
+    foreach (preg_split('/\R+/', (string) $raw, -1, PREG_SPLIT_NO_EMPTY) as $line) {
+        $line = trim($line);
+        if ($line === '' || strpos($line, '=') === false) {
+            continue;
+        }
+        [$canonical, $aliases] = explode('=', $line, 2);
+        $canonical = clean_param(trim($canonical), PARAM_ALPHANUMEXT);
+        if ($canonical === '') {
+            continue;
+        }
+        $variants = [];
+        foreach (preg_split('/[\s,]+/', trim($aliases), -1, PREG_SPLIT_NO_EMPTY) as $alias) {
+            $alias = clean_param($alias, PARAM_ALPHANUMEXT);
+            if ($alias !== '') {
+                $variants[] = $alias;
+            }
+        }
+        if ($variants !== []) {
+            $map[$canonical] = $variants;
+        }
+    }
+
+    return $map;
+}
+
+/**
+ * Alternate secondary-navigation keys that map to a configured drawer key.
+ *
+ * Site-specific aliases can be set in legacydrawercoursekeyaliases (canonical=alias1,alias2).
+ *
+ * @param string $key Configured drawer key.
+ * @return string[]
+ */
 function theme_boost3_legacy_drawer_course_key_variants(string $key): array {
-    $aliases = [
+    $configured = theme_boost3_parse_key_alias_map('legacydrawercoursekeyaliases');
+    if (isset($configured[$key])) {
+        return $configured[$key];
+    }
+
+    $defaults = [
         'editsettings' => ['editsettings', 'settings', 'courseedit'],
         'participants' => ['participants', 'users'],
         'grades' => ['grades', 'gradeadmin', 'gradebooksetup'],
         'competencies' => ['competencies', 'competency'],
     ];
 
-    return $aliases[$key] ?? [$key];
+    return $defaults[$key] ?? [$key];
+}
+
+/**
+ * Course formats that support flat section links in the legacy drawer.
+ *
+ * @return string[]
+ */
+function theme_boost3_legacy_drawer_section_formats(): array {
+    $raw = get_config('theme_boost3', 'legacydrawersectionformats');
+    if ($raw === false || trim((string) $raw) === '') {
+        return ['topics', 'weeks'];
+    }
+
+    $formats = [];
+    foreach (preg_split('/[\s,]+/', (string) $raw, -1, PREG_SPLIT_NO_EMPTY) as $format) {
+        $format = clean_param($format, PARAM_ALPHANUMEXT);
+        if ($format !== '') {
+            $formats[] = $format;
+        }
+    }
+
+    return $formats ?: ['topics', 'weeks'];
+}
+
+/**
+ * Whether the current course format supports section links in the legacy drawer.
+ *
+ * @param moodle_page $page
+ * @return bool
+ */
+function theme_boost3_legacy_drawer_supports_section_links(moodle_page $page): bool {
+    if (!theme_boost3_page_is_course_scoped_page($page)) {
+        return false;
+    }
+    $format = $page->course->format ?? '';
+    return in_array($format, theme_boost3_legacy_drawer_section_formats(), true);
+}
+
+/**
+ * Secondary navigation keys excluded from settingsnav overflow resolution.
+ *
+ * @return string[]
+ */
+function theme_boost3_gear_overflow_excluded_keys(): array {
+    $raw = get_config('theme_boost3', 'legacydrawergearexcludedkeys');
+    if ($raw === false || trim((string) $raw) === '') {
+        return ['coursehome', 'questionbank', 'coursereports'];
+    }
+
+    $keys = [];
+    foreach (preg_split('/[\s,]+/', (string) $raw, -1, PREG_SPLIT_NO_EMPTY) as $key) {
+        $key = clean_param($key, PARAM_ALPHANUMEXT);
+        if ($key !== '') {
+            $keys[] = $key;
+        }
+    }
+
+    return $keys ?: ['coursehome', 'questionbank', 'coursereports'];
 }
 
 /**
@@ -259,21 +365,7 @@ function theme_boost3_page_is_course_format_view(moodle_page $page): bool {
  * @return bool
  */
 function theme_boost3_page_is_site_admin_page(moodle_page $page): bool {
-    if (theme_boost3_page_is_course_scoped_page($page)) {
-        return false;
-    }
-
-    $pagetype = $page->pagetype ?? '';
-    if ($pagetype !== '' && strpos($pagetype, 'admin-') === 0) {
-        return true;
-    }
-    if ($page->url instanceof moodle_url) {
-        $path = $page->url->get_path(false);
-        if ($path === '/admin' || strpos($path, '/admin/') === 0) {
-            return true;
-        }
-    }
-    return false;
+    return \theme_boost3\navigation_policy::is_site_admin_for_drawer($page);
 }
 
 /**
@@ -286,24 +378,9 @@ function theme_boost3_should_show_secondary_tabs(?moodle_page $page = null): boo
     global $PAGE;
 
     $page = $page ?? $PAGE;
+    $policy = \theme_boost3\navigation_policy::resolve($page);
 
-    if (!$page->has_secondary_navigation()) {
-        return false;
-    }
-
-    if (theme_boost3_page_is_admin_page($page)) {
-        return true;
-    }
-
-    if (theme_boost3_legacy_drawer_active_for_page($page)) {
-        return false;
-    }
-
-    if (!theme_boost3_gear_navigation_enabled()) {
-        return true;
-    }
-
-    return theme_boost3_page_has_navigation_overflow($page);
+    return $policy->show_secondary_tabs;
 }
 
 /**
@@ -354,6 +431,21 @@ function theme_boost3_page_has_active_participants_secondary_tab(moodle_page $pa
  * @return bool
  */
 function theme_boost3_page_uses_participants_actionbar(moodle_page $page): bool {
+    // Primary signal: active settings navigation leaf under the users subtree.
+    if ($page->context && $page->context->contextlevel == CONTEXT_COURSE && $page->settingsnav) {
+        $activenode = $page->settingsnav->find_active_node();
+        if (is_object($activenode) && theme_boost3_settingsnav_node_is_under_users($activenode)) {
+            return true;
+        }
+        if (theme_boost3_page_has_active_participants_secondary_tab($page)) {
+            $usersnode = $page->settingsnav->find('users', null);
+            if (is_object($usersnode) && method_exists($usersnode, 'has_children') && $usersnode->has_children()) {
+                return true;
+            }
+        }
+    }
+
+    // Fallback for pages where settingsnav is not built yet.
     $pagetype = $page->pagetype ?? '';
     if (in_array($pagetype, [
         'course-view-participants',
@@ -388,20 +480,6 @@ function theme_boost3_page_uses_participants_actionbar(moodle_page $page): bool 
         }
     }
 
-    // Any course page in the participants (users) section with tertiary navigation.
-    if ($page->context && $page->context->contextlevel == CONTEXT_COURSE && $page->settingsnav) {
-        $usersnode = $page->settingsnav->find('users', null);
-        if (is_object($usersnode) && method_exists($usersnode, 'has_children') && $usersnode->has_children()) {
-            $activenode = $page->settingsnav->find_active_node();
-            if (is_object($activenode) && theme_boost3_settingsnav_node_is_under_users($activenode)) {
-                return true;
-            }
-            if (theme_boost3_page_has_active_participants_secondary_tab($page)) {
-                return true;
-            }
-        }
-    }
-
     return false;
 }
 
@@ -414,27 +492,7 @@ function theme_boost3_page_uses_participants_actionbar(moodle_page $page): bool 
  * @return bool
  */
 function theme_boost3_page_is_admin_page(moodle_page $page): bool {
-    if (theme_boost3_page_uses_participants_actionbar($page)) {
-        return false;
-    }
-
-    $pagetype = $page->pagetype ?? '';
-    if ($pagetype === 'course-edit') {
-        return true;
-    }
-    if ($pagetype !== '' && strpos($pagetype, 'admin-') === 0) {
-        return true;
-    }
-    if ($page->url instanceof moodle_url) {
-        $path = $page->url->get_path(false);
-        if ($path === '/admin' || strpos($path, '/admin/') === 0) {
-            return true;
-        }
-    }
-    if ($page->pagelayout === 'admin') {
-        return true;
-    }
-    return false;
+    return \theme_boost3\navigation_policy::is_admin_for_gear_and_tabs($page);
 }
 
 /**
@@ -444,19 +502,8 @@ function theme_boost3_page_is_admin_page(moodle_page $page): bool {
  * @return bool
  */
 function theme_boost3_page_should_show_gear(moodle_page $page): bool {
-    if (!theme_boost3_gear_navigation_enabled()) {
-        return false;
-    }
-    if (!isloggedin() || isguestuser()) {
-        return false;
-    }
-    if ($page->pagelayout === 'popup' || $page->pagelayout === 'embedded') {
-        return false;
-    }
-    if (theme_boost3_page_is_admin_page($page)) {
-        return false;
-    }
-    return true;
+    $policy = \theme_boost3\navigation_policy::resolve($page);
+    return $policy->show_gear;
 }
 
 /**
@@ -487,7 +534,7 @@ function theme_boost3_resolve_settingsnav_menunode(moodle_page $page, $activenod
         return null;
     }
 
-    $excludedkeys = ['coursehome', 'questionbank', 'coursereports'];
+    $excludedkeys = theme_boost3_gear_overflow_excluded_keys();
 
     if ($activenode === null && $page->secondarynav) {
         $activenode = $page->secondarynav->find_active_node();
@@ -530,20 +577,15 @@ function theme_boost3_resolve_settingsnav_menunode(moodle_page $page, $activenod
 }
 
 /**
- * Whether the current page is in tertiary (overflow) navigation mode.
+ * Detect tertiary overflow navigation without requiring gear to be enabled.
  *
- * Split mode requires real section submenu data (layout url_select or settings/users subtree),
- * not navigation overflow state alone (which is also true on the course home page).
+ * Used by navigation_policy to decide effective gear when legacy drawer is on.
  *
  * @param moodle_page|null $page
  * @return bool
  */
-function theme_boost3_page_has_navigation_overflow(?moodle_page $page = null): bool {
+function theme_boost3_page_detect_navigation_overflow(?moodle_page $page = null): bool {
     global $PAGE;
-
-    if (!theme_boost3_gear_navigation_enabled()) {
-        return false;
-    }
 
     $page = $page ?? $PAGE;
 
@@ -573,28 +615,33 @@ function theme_boost3_page_has_navigation_overflow(?moodle_page $page = null): b
 }
 
 /**
+ * Whether the current page is in tertiary (overflow) navigation mode for gear UI.
+ *
+ * @param moodle_page|null $page
+ * @return bool
+ */
+function theme_boost3_page_has_navigation_overflow(?moodle_page $page = null): bool {
+    global $PAGE;
+
+    $page = $page ?? $PAGE;
+    $policy = \theme_boost3\navigation_policy::resolve($page);
+
+    if (!$policy->gear_effective) {
+        return false;
+    }
+
+    return theme_boost3_page_detect_navigation_overflow($page);
+}
+
+/**
  * Whether the gear menu should sit in the page header row (course home gear-only mode).
  *
  * @param moodle_page $page
  * @return bool
  */
 function theme_boost3_page_should_inline_gear_with_header(moodle_page $page): bool {
-    if (theme_boost3_legacy_drawer_active_for_page($page)) {
-        return false;
-    }
-    if (!theme_boost3_page_should_show_gear($page)) {
-        return false;
-    }
-    if (!$page->has_secondary_navigation()) {
-        return false;
-    }
-    if (theme_boost3_page_is_admin_page($page)) {
-        return false;
-    }
-    if (theme_boost3_page_has_navigation_overflow($page)) {
-        return false;
-    }
-    return true;
+    $policy = \theme_boost3\navigation_policy::resolve($page);
+    return $policy->gear_inline_header;
 }
 
 /**
@@ -603,38 +650,19 @@ function theme_boost3_page_should_inline_gear_with_header(moodle_page $page): bo
  * @param array $templatecontext
  * @return array
  */
-function theme_boost3_append_drawer_nav_flags(array $templatecontext): array {
+function theme_boost3_append_drawer_nav_flags(array $templatecontext, bool $legacynavdrawer = false): array {
     global $PAGE;
 
-    $legacyactive = theme_boost3_legacy_drawer_active_for_page($PAGE);
-    $showtabs = theme_boost3_should_show_secondary_tabs($PAGE);
+    $policy = \theme_boost3\navigation_policy::resolve($PAGE, $legacynavdrawer);
 
-    $templatecontext['boost3_legacy_drawer'] = $legacyactive;
-    $templatecontext['boost3_legacy_nav_toggle'] = $legacyactive;
-    $templatecontext['boost3_show_secondary_tabs'] = $showtabs;
-
-    if (!theme_boost3_gear_navigation_enabled()) {
-        $templatecontext['boost3_use_gear_secondary_nav'] = false;
-        $templatecontext['boost3_gear_inline_header'] = false;
-        $templatecontext['boost3_hide_tertiary_overflow'] = false;
-        $templatecontext['boost3_participants_gear'] = false;
-        return $templatecontext;
-    }
-
-    $hasoverflow = theme_boost3_page_has_navigation_overflow($PAGE);
-    $usegear = theme_boost3_page_should_show_gear($PAGE);
-    $inlinegear = theme_boost3_page_should_inline_gear_with_header($PAGE);
-
-    if ($legacyactive) {
-        $hasgearsecondary = theme_boost3_page_has_legacy_gear_secondary_items($PAGE);
-        $usegear = $usegear && ($hasoverflow || $hasgearsecondary);
-        $inlinegear = false;
-    }
-
-    $templatecontext['boost3_use_gear_secondary_nav'] = $usegear && !$inlinegear;
-    $templatecontext['boost3_gear_inline_header'] = $inlinegear;
-    $templatecontext['boost3_hide_tertiary_overflow'] = $usegear && $hasoverflow;
-    $templatecontext['boost3_participants_gear'] = $usegear && theme_boost3_page_uses_participants_actionbar($PAGE);
+    $templatecontext['boost3_legacy_drawer'] = $policy->legacy_drawer_eligible;
+    $templatecontext['boost3_legacy_nav_toggle'] = $policy->legacy_nav_toggle;
+    $templatecontext['boost3_show_secondary_tabs'] = $policy->show_secondary_tabs;
+    $templatecontext['boost3_use_gear_secondary_nav'] = $policy->use_gear_secondary_nav;
+    $templatecontext['boost3_gear_inline_header'] = $policy->gear_inline_header;
+    $templatecontext['boost3_hide_tertiary_overflow'] = $policy->hide_tertiary_overflow;
+    $templatecontext['boost3_participants_gear'] = $policy->participants_gear;
+    $templatecontext['boost3_gear_effective'] = $policy->gear_effective;
 
     return $templatecontext;
 }

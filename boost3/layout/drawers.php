@@ -161,7 +161,7 @@ $templatecontext = [
     'addblockbutton' => $addblockbutton,
 ];
 
-$templatecontext = theme_boost3_append_drawer_nav_flags($templatecontext);
+$templatecontext = theme_boost3_append_drawer_nav_flags($templatecontext, $legacynavdrawer);
 
 // Participants action bar: navigation is stripped in PHP; only hide in-content tertiary elsewhere.
 if (!empty($templatecontext['boost3_hide_tertiary_overflow'])
@@ -171,7 +171,7 @@ if (!empty($templatecontext['boost3_hide_tertiary_overflow'])
 if (!empty($templatecontext['boost3_participants_gear'])) {
     $extraclasses[] = 'theme-boost3-participants-gear';
 }
-if (!empty($templatecontext['boost3_legacy_drawer']) && $legacynavdrawer) {
+if (!empty($templatecontext['boost3_legacy_nav_toggle'])) {
     $extraclasses[] = 'theme-boost3-legacy-drawer';
 }
 $templatecontext['bodyattributes'] = $OUTPUT->body_attributes($extraclasses);

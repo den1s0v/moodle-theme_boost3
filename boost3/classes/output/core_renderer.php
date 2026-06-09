@@ -31,6 +31,7 @@ use moodle_page;
 use moodle_url;
 use navigation_node;
 use pix_icon;
+use theme_boost3\active_state_resolver;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -271,7 +272,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             return $items;
         }
 
-        $excludedkeys = ['coursehome', 'questionbank', 'coursereports'];
+        $excludedkeys = theme_boost3_gear_overflow_excluded_keys();
         if (in_array($activenode->key, $excludedkeys, true)) {
             return $items;
         }
@@ -334,7 +335,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                 $items[] = [
                     'text' => $this->boost3_plain_nav_label($label, 0),
                     'url' => $url,
-                    'active' => !empty($child->isactive),
+                    'active' => $this->boost3_active_resolver()->from_nav_node(!empty($child->isactive), $url),
                 ];
                 continue;
             }
@@ -361,7 +362,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                     $items[] = [
                         'text' => $this->boost3_plain_nav_label($grandlabel, 0),
                         'url' => $childurl,
-                        'active' => !empty($grandchild->isactive),
+                        'active' => $this->boost3_active_resolver()->from_nav_node(!empty($grandchild->isactive), $childurl),
                     ];
                 }
             }
@@ -413,7 +414,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $items[] = [
                 'text' => $this->boost3_plain_nav_label($name, 0),
                 'url' => $url,
-                'active' => !empty($option['selected']),
+                'active' => !empty($option['selected']) || $this->boost3_active_resolver()->from_nav_node(false, $url),
             ];
         }
     }
@@ -479,7 +480,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $items[] = [
                 'text' => $this->boost3_plain_nav_label($label, 0),
                 'url' => $url,
-                'active' => !empty($node->isactive) || $this->boost3_legacy_url_matches_current($url),
+                'active' => $this->boost3_active_resolver()->from_nav_node(!empty($node->isactive), $url),
             ];
         }
     }
@@ -509,7 +510,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         $items[] = $this->boost3_legacy_make_item(
             $this->boost3_plain_nav_label($label, 0),
             $url,
-            $this->boost3_legacy_resolve_active(!empty($node->isactive), $url),
+            $this->boost3_active_resolver()->from_nav_node(!empty($node->isactive), $url),
             $this->boost3_legacy_item_icon_from_node($this->page, $node)
         );
     }
@@ -569,92 +570,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
-     * Whether a drawer item URL matches the current page (ignoring URL fragment).
+     * Shared active-state resolver for drawer and gear items.
      *
-     * @param string $url
-     * @return bool
+     * @return active_state_resolver
      */
-    protected function boost3_legacy_url_matches_current(string $url): bool {
-        global $PAGE;
-
-        if (!$PAGE->url instanceof moodle_url) {
-            return false;
-        }
-
-        try {
-            $target = new moodle_url($url);
-            return $target->compare($PAGE->url, URL_MATCH_BASE);
-        } catch (\moodle_exception $e) {
-            return false;
-        }
-    }
-
-    /**
-     * Resolve legacy drawer active state from navigation node flag or current URL.
-     *
-     * @param bool $nodeactive
-     * @param string $url
-     * @return bool
-     */
-    protected function boost3_legacy_resolve_active(bool $nodeactive, string $url): bool {
-        if ($nodeactive) {
-            return true;
-        }
-        return $this->boost3_legacy_url_matches_current($url);
-    }
-
-    /**
-     * Active state from navigation node flag only (no URL matching).
-     *
-     * @param bool $nodeactive
-     * @return bool
-     */
-    protected function boost3_legacy_resolve_active_strict(bool $nodeactive): bool {
-        return $nodeactive;
-    }
-
-    /**
-     * Whether the course home link in the drawer should appear active.
-     *
-     * @param moodle_page $page
-     * @return bool
-     */
-    protected function boost3_legacy_resolve_course_home_active(moodle_page $page): bool {
-        return theme_boost3_page_is_course_format_view($page);
-    }
-
-    /**
-     * Active state for items in the "My courses" drawer block.
-     *
-     * On the course home page the course title row above already shows active state;
-     * suppress duplicate highlights in the mycourses list.
-     *
-     * @param moodle_page $page
-     * @param bool $nodeactive
-     * @param string $url
-     * @return bool
-     */
-    protected function boost3_legacy_resolve_mycourses_item_active(moodle_page $page, bool $nodeactive, string $url): bool {
-        if (theme_boost3_page_is_course_format_view($page)) {
-            return false;
-        }
-        if ($nodeactive) {
-            return true;
-        }
-        if (!theme_boost3_page_is_course_scoped_page($page)) {
-            return false;
-        }
-        try {
-            $target = new moodle_url($url);
-            if ($target->get_path(false) !== '/course/view.php') {
-                return false;
-            }
-            $targetid = (int) $target->get_param('id');
-            $currentid = (int) ($page->course->id ?? 0);
-            return $targetid > 0 && $targetid === $currentid;
-        } catch (\moodle_exception $e) {
-            return false;
-        }
+    protected function boost3_active_resolver(): active_state_resolver {
+        return new active_state_resolver($this->page);
     }
 
     /**
@@ -828,7 +749,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         $items[] = $this->boost3_legacy_make_item(
             format_string($course->fullname, true, ['context' => context_course::instance($course->id)]),
             $homeurl,
-            $this->boost3_legacy_resolve_course_home_active($page),
+            $this->boost3_active_resolver()->course_home(),
             $this->boost3_legacy_export_icon(new pix_icon('i/course', '', 'core'))
         );
 
@@ -871,14 +792,15 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     protected function boost3_legacy_build_course_section_links(moodle_page $page): array {
         global $DB;
 
+        if (!theme_boost3_legacy_drawer_supports_section_links($page)) {
+            return [];
+        }
+
         $course = $page->course;
+        $resolver = $this->boost3_active_resolver();
         $modinfo = get_fast_modinfo($course);
         $items = [];
         $linkmode = theme_boost3_legacy_drawer_section_link_mode();
-        $viewsection = null;
-        if (theme_boost3_page_is_course_format_view($page)) {
-            $viewsection = optional_param('section', null, PARAM_INT);
-        }
 
         $sectionrecords = $DB->get_records('course_sections', ['course' => $course->id], 'section ASC');
         foreach ($sectionrecords as $sectionrecord) {
@@ -894,17 +816,10 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
 
             if ($linkmode === 'anchor') {
                 $sectionurl = new moodle_url('/course/view.php', ['id' => $course->id], 'section-' . $sectionnum);
-                $isactive = (theme_boost3_page_is_course_format_view($page)
-                    && $viewsection !== null
-                    && (int) $viewsection === $sectionnum);
             } else {
                 $sectionurl = new moodle_url('/course/section.php', ['id' => $sectionrecord->id]);
-                $sectionurlout = $sectionurl->out(false);
-                $isactive = $this->boost3_legacy_url_matches_current($sectionurlout);
-                if (!$isactive && $viewsection !== null) {
-                    $isactive = ((int) $viewsection === $sectionnum);
-                }
             }
+            $isactive = $resolver->section($sectionnum, $sectionurl->out(false), $linkmode);
 
             $items[] = $this->boost3_legacy_make_item(
                 $name,
@@ -993,7 +908,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $items[] = $this->boost3_legacy_make_item(
                 $this->boost3_plain_nav_label($label, 0),
                 $plainurl,
-                $this->boost3_legacy_resolve_active(!empty($node->isactive), $plainurl),
+                $this->boost3_active_resolver()->from_nav_node(!empty($node->isactive), $plainurl),
                 $this->boost3_legacy_item_icon_from_node($this->page, $node)
             );
         }
@@ -1027,7 +942,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                     $items[] = $this->boost3_legacy_make_item(
                         $this->boost3_plain_nav_label($label, 0),
                         $plainurl,
-                        $this->boost3_legacy_resolve_mycourses_item_active($this->page, !empty($child->isactive), $plainurl),
+                        $this->boost3_active_resolver()->mycourses_item(!empty($child->isactive), $plainurl),
                         $this->boost3_legacy_item_icon_from_node($this->page, $child)
                     );
                 }
