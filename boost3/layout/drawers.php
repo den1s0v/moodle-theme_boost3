@@ -85,9 +85,23 @@ $hasblocks = (strpos($blockshtml, 'data-block=') !== false || !empty($addblockbu
 if (!$hasblocks) {
     $blockdraweropen = false;
 }
-$courseindex = core_course_drawer();
-if (!$courseindex) {
-    $courseindexopen = false;
+$legacyactive = theme_boost3_legacy_drawer_active_for_page($PAGE);
+$legacynavdrawer = false;
+$legacynavdrawercontent = '';
+$courseindex = null;
+
+if ($legacyactive) {
+    $legacynavdrawercontent = $OUTPUT->legacy_nav_drawer();
+    if ($legacynavdrawercontent !== '') {
+        $legacynavdrawer = true;
+    } else {
+        $courseindexopen = false;
+    }
+} else {
+    $courseindex = core_course_drawer();
+    if (!$courseindex) {
+        $courseindexopen = false;
+    }
 }
 
 $forceblockdraweropen = $OUTPUT->firstview_fakeblocks();
@@ -132,6 +146,8 @@ $templatecontext = [
     'courseindexopen' => $courseindexopen,
     'blockdraweropen' => $blockdraweropen,
     'courseindex' => $courseindex,
+    'legacynavdrawer' => $legacynavdrawer,
+    'legacynavdrawercontent' => $legacynavdrawercontent,
     'primarymoremenu' => $primarymenu['moremenu'],
     'secondarymoremenu' => $secondarynavigation ?: false,
     'mobileprimarynav' => $primarymenu['mobileprimarynav'],
@@ -154,6 +170,9 @@ if (!empty($templatecontext['boost3_hide_tertiary_overflow'])
 }
 if (!empty($templatecontext['boost3_participants_gear'])) {
     $extraclasses[] = 'theme-boost3-participants-gear';
+}
+if (!empty($templatecontext['boost3_legacy_drawer']) && $legacynavdrawer) {
+    $extraclasses[] = 'theme-boost3-legacy-drawer';
 }
 $templatecontext['bodyattributes'] = $OUTPUT->body_attributes($extraclasses);
 

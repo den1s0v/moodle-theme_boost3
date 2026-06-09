@@ -32,4 +32,10 @@ if ($ADMIN->fulltree) {
     $description = get_string('enablegearmenu_desc', 'theme_boost3');
     $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
     $settings->add($setting);
+
+    $name = 'theme_boost3/enablelegacydrawer';
+    $title = get_string('enablelegacydrawer', 'theme_boost3');
+    $description = get_string('enablelegacydrawer_desc', 'theme_boost3');
+    $setting = new admin_setting_configcheckbox($name, $title, $description, 0);
+    $settings->add($setting);
 }

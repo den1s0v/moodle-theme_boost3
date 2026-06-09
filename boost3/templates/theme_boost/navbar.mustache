@@ -57,6 +57,7 @@
 }}
 {{!
     Boost Union baseline. Gear menu is rendered in theme_boost/drawers (secondary-navigation).
+    theme_boost3: legacy drawer toggle (hamburger) in navbar when enablelegacydrawer is on.
 }}
 {{!
     This template is a modified version of theme_boost/navbar
@@ -79,11 +80,27 @@
 <nav class="navbar fixed-top {{navbarcolorclasses}} navbar-expand {{#bottombar.drawer}} smartmenu-bottom-navigation {{/bottombar.drawer}}" aria-label="{{#str}}sitemenubar, admin{{/str}}">
     <div class="container-fluid">
         {{^bottombar.drawer}}
+        {{^boost3_legacy_nav_toggle}}
         <button class="navbar-toggler aabtn d-block d-md-none px-1 my-1 border-0" data-toggler="drawers" data-action="toggle" data-target="theme_boost-drawers-primary">
             <span class="navbar-toggler-icon"></span>
             <span class="sr-only">{{#str}}sidepanel, core{{/str}}</span>
         </button>
+        {{/boost3_legacy_nav_toggle}}
         {{/bottombar.drawer}}
+
+        {{#boost3_legacy_nav_toggle}}
+        <button
+            class="navbar-toggler aabtn theme-boost3-legacy-nav-toggle d-block px-1 my-1 border-0 me-2"
+            data-toggler="drawers"
+            data-action="toggle"
+            data-target="theme_boost-drawers-courseindex"
+            aria-controls="theme_boost-drawers-courseindex"
+            title="{{#str}}opendrawerindex, core{{/str}}"
+        >
+            <span class="navbar-toggler-icon"></span>
+            <span class="sr-only">{{#str}}opendrawerindex, core{{/str}}</span>
+        </button>
+        {{/boost3_legacy_nav_toggle}}
 
         <a href="{{#alternativelogolinkurl}}{{{alternativelogolinkurl}}}{{/alternativelogolinkurl}}{{^alternativelogolinkurl}}{{{ config.homeurl }}}{{/alternativelogolinkurl}}" class="navbar-brand align-items-center m-0 me-4 p-0 aabtn {{#bottombar.drawer}} d-flex {{/bottombar.drawer}} {{^bottombar.drawer}} d-none d-md-flex {{/bottombar.drawer}} ">
 

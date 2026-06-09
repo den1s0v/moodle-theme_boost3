@@ -67,6 +67,7 @@
     * Added smartmenu js to support third level submenus.
     * theme_boost3: gear menu or split secondary tabs + gear when tertiary overflow is active.
     * theme_boost3: gear-only pages render the cog in the page header row (next to the title).
+    * theme_boost3: legacy flat left nav drawer (Moodle 3.9 style) reuses courseindex drawer id.
 }}
 {{> theme_boost/head }}
 
@@ -77,6 +78,19 @@
     {{{ output.standard_top_of_body_html }}}
 
     {{> theme_boost/navbar }}
+    {{#legacynavdrawer}}
+        {{< theme_boost/drawer }}
+            {{$id}}theme_boost-drawers-courseindex{{/id}}
+            {{$drawerclasses}}drawer drawer-left theme-boost3-legacy-nav-drawer {{#courseindexopen}}show{{/courseindexopen}}{{/drawerclasses}}
+            {{$drawercontent}}
+                {{{legacynavdrawercontent}}}
+            {{/drawercontent}}
+            {{$drawerpreferencename}}drawer-open-index{{/drawerpreferencename}}
+            {{$drawerstate}}show-drawer-left{{/drawerstate}}
+            {{$tooltipplacement}}right{{/tooltipplacement}}
+            {{$closebuttontext}}{{#str}}closecourseindex, core{{/str}}{{/closebuttontext}}
+        {{/ theme_boost/drawer}}
+    {{/legacynavdrawer}}
     {{#courseindex}}
         {{< theme_boost/drawer }}
             {{$id}}theme_boost-drawers-courseindex{{/id}}
@@ -162,6 +176,7 @@
 
         <div id="topofscroll" class="main-inner">
             <div class="drawer-toggles d-flex">
+                {{^boost3_legacy_drawer}}
                 {{#courseindex}}
                     <div class="drawer-toggler drawer-left-toggle open-nav d-print-none">
                         <button
@@ -178,6 +193,7 @@
                         </button>
                     </div>
                 {{/courseindex}}
+                {{/boost3_legacy_drawer}}
                 {{#hasblocks}}
                     <div class="drawer-toggler drawer-right-toggle ms-auto d-print-none">
                         <button

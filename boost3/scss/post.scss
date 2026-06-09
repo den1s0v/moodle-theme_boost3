@@ -1,3 +1,60 @@
+// theme_boost3 — legacy flat left navigation drawer (Moodle 3.9 style).
+
+body.theme-boost3-legacy-drawer {
+    .theme-boost3-legacy-nav-drawer .drawercontent {
+        padding: 0;
+    }
+
+    .theme-boost3-legacy-nav.list-group {
+        .list-group-item-action {
+            border-left: 0;
+            border-right: 0;
+            padding: 0.65rem 1rem;
+            color: #343a40;
+
+            &:hover,
+            &:focus {
+                background-color: #f8f9fa;
+                color: #0f6cbf;
+            }
+
+            &.active {
+                background-color: #e7f0fa;
+                color: #0f6cbf;
+                font-weight: 600;
+                border-color: rgba(0, 0, 0, 0.125);
+            }
+        }
+
+        .theme-boost3-legacy-nav-heading {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #6a737b;
+            background: transparent;
+            border-left: 0;
+            border-right: 0;
+            padding: 0.85rem 1rem 0.35rem;
+            pointer-events: none;
+            cursor: default;
+        }
+    }
+}
+
+.navbar .theme-boost3-legacy-nav-toggle.navbar-toggler {
+    color: rgba(255, 255, 255, 0.85);
+
+    &:hover,
+    &:focus {
+        color: #fff;
+    }
+
+    .navbar-toggler-icon {
+        filter: brightness(0) invert(1);
+    }
+}
+
 // theme_boost3 — gear menu in secondary navigation area.
 
 // Gear in page header row (course home and other gear-only pages).

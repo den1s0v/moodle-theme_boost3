@@ -1,0 +1,24 @@
+{{!
+    @template theme_boost3/legacy_nav_drawer
+
+    Moodle-3-style flat left navigation drawer (list-group).
+
+    Context variables:
+    - arialabel string Accessible label for the nav landmark
+    - sections array of { title, items[] } where items are { text, url, active } or { text, isheader }
+}}
+<nav class="theme-boost3-legacy-nav list-group list-group-flush" aria-label="{{arialabel}}">
+    {{#sections}}
+        {{#title}}
+            <div class="list-group-item theme-boost3-legacy-nav-heading">{{title}}</div>
+        {{/title}}
+        {{#items}}
+            {{#isheader}}
+                <div class="list-group-item theme-boost3-legacy-nav-heading">{{text}}</div>
+            {{/isheader}}
+            {{^isheader}}
+                <a class="list-group-item list-group-item-action{{#active}} active{{/active}}" href="{{url}}">{{text}}</a>
+            {{/isheader}}
+        {{/items}}
+    {{/sections}}
+</nav>

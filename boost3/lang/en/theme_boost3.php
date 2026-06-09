@@ -29,3 +29,7 @@ $string['gearmenu'] = 'Course menu';
 $string['gearmenudesc'] = 'Course and page actions (similar to the old gear menu)';
 $string['enablegearmenu'] = 'Gear-style course menu (Moodle 3.9 style)';
 $string['enablegearmenu_desc'] = 'When enabled, course tabs and section links are consolidated in a gear menu. When disabled, standard Boost horizontal tabs and the tertiary url_select are used. Purge caches after changing this setting.';
+$string['enablelegacydrawer'] = 'Legacy left navigation drawer (Moodle 3.9 style)';
+$string['enablelegacydrawer_desc'] = 'When enabled, the left drawer shows flat course, site and my courses links instead of the activity tree. Secondary tabs move into the drawer. Purge caches after changing this setting.';
+$string['legacydrawernav'] = 'Course and site navigation';
+$string['legacydrawersite'] = 'Site';

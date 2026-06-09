@@ -25,9 +25,11 @@
 namespace theme_boost3\output;
 
 use action_link;
+use context_course;
 use core\url as core_url;
 use moodle_page;
 use moodle_url;
+use navigation_node;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -43,6 +45,47 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      *
      * @return string HTML fragment (empty if nothing to show).
      */
+    /**
+     * Renders the Moodle-3-style flat left navigation drawer.
+     *
+     * @return string HTML fragment (empty when legacy drawer is inactive).
+     */
+    public function legacy_nav_drawer(): string {
+        global $PAGE;
+
+        if (!theme_boost3_legacy_drawer_active_for_page($PAGE)) {
+            return '';
+        }
+
+        $sections = [];
+
+        if ($PAGE->context->contextlevel >= CONTEXT_COURSE && $PAGE->course->id != SITEID) {
+            $coursesection = $this->boost3_legacy_build_course_section($PAGE);
+            if (!empty($coursesection['items'])) {
+                $sections[] = $coursesection;
+            }
+        }
+
+        $sitesection = $this->boost3_legacy_build_site_section($PAGE);
+        if (!empty($sitesection['items'])) {
+            $sections[] = $sitesection;
+        }
+
+        $mycoursessection = $this->boost3_legacy_build_mycourses_section($PAGE);
+        if (!empty($mycoursessection['items'])) {
+            $sections[] = $mycoursessection;
+        }
+
+        if (count($sections) === 0) {
+            return '';
+        }
+
+        return $this->render_from_template('theme_boost3/legacy_nav_drawer', [
+            'arialabel' => get_string('legacydrawernav', 'theme_boost3'),
+            'sections' => $sections,
+        ]);
+    }
+
     public function gear_menu(): string {
         global $PAGE;
 
@@ -481,5 +524,204 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             }
         }
         return false;
+    }
+
+    /**
+     * Course block: home, secondary tabs, section links (topics/weeks only).
+     *
+     * @param moodle_page $page
+     * @return array{title: string, items: array}
+     */
+    protected function boost3_legacy_build_course_section(moodle_page $page): array {
+        $items = [];
+        $course = $page->course;
+
+        $homeurl = (new moodle_url('/course/view.php', ['id' => $course->id]))->out(false);
+        $items[] = [
+            'text' => format_string($course->fullname, true, ['context' => context_course::instance($course->id)]),
+            'url' => $homeurl,
+            'active' => $page->pagetype === 'course-view',
+        ];
+
+        if ($page->has_secondary_navigation() && $page->secondarynav) {
+            foreach ($page->secondarynav->children as $child) {
+                $this->boost3_collect_top_level_node($child, $items);
+            }
+        }
+
+        foreach ($this->boost3_legacy_build_course_section_links($page) as $sectionitem) {
+            if (!$this->boost3_items_has_url($items, $sectionitem['url'])) {
+                $items[] = $sectionitem;
+            }
+        }
+
+        return [
+            'title' => '',
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * Flat section links for topics/weeks course formats.
+     *
+     * @param moodle_page $page
+     * @return array<int, array<string, mixed>>
+     */
+    protected function boost3_legacy_build_course_section_links(moodle_page $page): array {
+        $course = $page->course;
+        if (!in_array($course->format, ['topics', 'weeks'], true)) {
+            return [];
+        }
+
+        $items = [];
+        $modinfo = get_fast_modinfo($course);
+        $currentsection = null;
+        if ($page->context->contextlevel == CONTEXT_COURSE) {
+            $sectionnum = optional_param('section', null, PARAM_INT);
+            if ($sectionnum !== null) {
+                $currentsection = $sectionnum;
+            }
+        }
+
+        foreach ($modinfo->get_section_info_all() as $sectionnum => $sectioninfo) {
+            if (empty($sectioninfo->uservisible) || !empty($sectioninfo->deletioninprogress)) {
+                continue;
+            }
+            $name = get_section_name($course, $sectionnum);
+            $url = course_get_url($course, $sectionnum)->out(false);
+            $items[] = [
+                'text' => $name,
+                'url' => $url,
+                'active' => ($currentsection !== null && (int) $currentsection === (int) $sectionnum),
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * Site block from global navigation.
+     *
+     * @param moodle_page $page
+     * @return array{title: string, items: array}
+     */
+    protected function boost3_legacy_build_site_section(moodle_page $page): array {
+        $items = [];
+        $sitekeys = ['myhome', 'home', 'calendar', 'privatefiles', 'contentbank'];
+
+        foreach ($sitekeys as $key) {
+            $node = $page->navigation->find($key, null);
+            if (!is_object($node)) {
+                continue;
+            }
+            $this->boost3_legacy_collect_nav_node($node, $items);
+        }
+
+        return [
+            'title' => get_string('legacydrawersite', 'theme_boost3'),
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * My courses block from global navigation (supports optional plugin extensions).
+     *
+     * @param moodle_page $page
+     * @return array{title: string, items: array}
+     */
+    protected function boost3_legacy_build_mycourses_section(moodle_page $page): array {
+        $root = $page->navigation->find('course_collections', navigation_node::TYPE_ROOTNODE);
+        if (!is_object($root)) {
+            $root = $page->navigation->find('mycourses', navigation_node::TYPE_ROOTNODE);
+        }
+        if (!is_object($root)) {
+            return ['title' => '', 'items' => []];
+        }
+
+        $items = [];
+        $this->boost3_legacy_flatten_nav_branch($root, $items, 2);
+
+        $title = method_exists($root, 'get_content') ? $root->get_content() : (string) $root->text;
+        if ($title === '') {
+            $title = get_string('mycourses');
+        }
+
+        return [
+            'title' => $title,
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * Collect a single visible navigation node as a drawer item.
+     *
+     * @param object $node
+     * @param array $items
+     */
+    protected function boost3_legacy_collect_nav_node($node, array &$items): void {
+        if (!is_object($node) || (property_exists($node, 'display') && $node->display === false)) {
+            return;
+        }
+
+        $url = method_exists($node, 'action') ? $this->boost3_nav_url_from_action($node->action()) : null;
+        $label = method_exists($node, 'get_text') ? $node->get_text() :
+            (property_exists($node, 'text') ? (string) $node->text : '');
+
+        if ($url === null || $label === '') {
+            return;
+        }
+
+        $plainurl = $url;
+        if (!$this->boost3_items_has_url($items, $plainurl)) {
+            $items[] = [
+                'text' => $this->boost3_plain_nav_label($label, 0),
+                'url' => $plainurl,
+                'active' => !empty($node->isactive),
+            ];
+        }
+    }
+
+    /**
+     * Flatten a navigation branch for the legacy drawer (limited depth).
+     *
+     * @param object $node
+     * @param array $items
+     * @param int $maxdepth
+     * @param int $depth
+     */
+    protected function boost3_legacy_flatten_nav_branch($node, array &$items, int $maxdepth = 2, int $depth = 0): void {
+        if (!is_object($node) || $depth >= $maxdepth || !method_exists($node, 'has_children') || !$node->has_children()) {
+            return;
+        }
+
+        foreach ($node->children as $child) {
+            if (!is_object($child) || (property_exists($child, 'display') && $child->display === false)) {
+                continue;
+            }
+
+            $url = method_exists($child, 'action') ? $this->boost3_nav_url_from_action($child->action()) : null;
+            $label = method_exists($child, 'get_text') ? $child->get_text() :
+                (property_exists($child, 'text') ? (string) $child->text : '');
+
+            if ($url !== null && $label !== '') {
+                $plainurl = $url;
+                if (!$this->boost3_items_has_url($items, $plainurl)) {
+                    $items[] = [
+                        'text' => $this->boost3_plain_nav_label($label, 0),
+                        'url' => $plainurl,
+                        'active' => !empty($child->isactive),
+                    ];
+                }
+                continue;
+            }
+
+            if ($label !== '' && method_exists($child, 'has_children') && $child->has_children()) {
+                $items[] = [
+                    'text' => $this->boost3_plain_nav_label($label, 0),
+                    'isheader' => true,
+                ];
+                $this->boost3_legacy_flatten_nav_branch($child, $items, $maxdepth, $depth + 1);
+            }
+        }
     }
 }

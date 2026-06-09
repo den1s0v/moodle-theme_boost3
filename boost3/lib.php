@@ -38,6 +38,71 @@ function theme_boost3_gear_navigation_enabled(): bool {
 }
 
 /**
+ * Whether the Moodle-3-style legacy left navigation drawer is enabled in theme settings.
+ *
+ * @return bool
+ */
+function theme_boost3_legacy_drawer_enabled(): bool {
+    $value = get_config('theme_boost3', 'enablelegacydrawer');
+    if ($value === false) {
+        return false;
+    }
+    return (bool) $value;
+}
+
+/**
+ * Whether the legacy left drawer should render on this page.
+ *
+ * @param moodle_page $page
+ * @return bool
+ */
+function theme_boost3_legacy_drawer_active_for_page(moodle_page $page): bool {
+    if (!theme_boost3_legacy_drawer_enabled()) {
+        return false;
+    }
+    if (!isloggedin() || isguestuser()) {
+        return false;
+    }
+    if (in_array($page->pagelayout, ['popup', 'embedded', 'maintenance', 'redirect'], true)) {
+        return false;
+    }
+    if (theme_boost3_page_is_admin_page($page)) {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Whether horizontal secondary navigation tabs should be shown.
+ *
+ * @param moodle_page|null $page
+ * @return bool
+ */
+function theme_boost3_should_show_secondary_tabs(?moodle_page $page = null): bool {
+    global $PAGE;
+
+    $page = $page ?? $PAGE;
+
+    if (!$page->has_secondary_navigation()) {
+        return false;
+    }
+
+    if (theme_boost3_page_is_admin_page($page)) {
+        return true;
+    }
+
+    if (theme_boost3_legacy_drawer_active_for_page($page)) {
+        return false;
+    }
+
+    if (!theme_boost3_gear_navigation_enabled()) {
+        return true;
+    }
+
+    return theme_boost3_page_has_navigation_overflow($page);
+}
+
+/**
  * Whether a settings navigation node belongs to the course users (participants) subtree.
  *
  * @param object|null $node
@@ -310,6 +375,9 @@ function theme_boost3_page_has_navigation_overflow(?moodle_page $page = null): b
  * @return bool
  */
 function theme_boost3_page_should_inline_gear_with_header(moodle_page $page): bool {
+    if (theme_boost3_legacy_drawer_active_for_page($page)) {
+        return false;
+    }
     if (!theme_boost3_page_should_show_gear($page)) {
         return false;
     }
@@ -334,24 +402,33 @@ function theme_boost3_page_should_inline_gear_with_header(moodle_page $page): bo
 function theme_boost3_append_drawer_nav_flags(array $templatecontext): array {
     global $PAGE;
 
+    $legacyactive = theme_boost3_legacy_drawer_active_for_page($PAGE);
+    $showtabs = theme_boost3_should_show_secondary_tabs($PAGE);
+
+    $templatecontext['boost3_legacy_drawer'] = $legacyactive;
+    $templatecontext['boost3_legacy_nav_toggle'] = $legacyactive;
+    $templatecontext['boost3_show_secondary_tabs'] = $showtabs;
+
     if (!theme_boost3_gear_navigation_enabled()) {
-        $templatecontext['boost3_show_secondary_tabs'] = $PAGE->has_secondary_navigation();
         $templatecontext['boost3_use_gear_secondary_nav'] = false;
+        $templatecontext['boost3_gear_inline_header'] = false;
         $templatecontext['boost3_hide_tertiary_overflow'] = false;
+        $templatecontext['boost3_participants_gear'] = false;
         return $templatecontext;
     }
 
     $hasoverflow = theme_boost3_page_has_navigation_overflow($PAGE);
-    $isadmin = theme_boost3_page_is_admin_page($PAGE);
-    $showtabs = $PAGE->has_secondary_navigation() && ($isadmin || $hasoverflow);
     $usegear = theme_boost3_page_should_show_gear($PAGE);
-    $hidetertiary = $usegear && $hasoverflow;
     $inlinegear = theme_boost3_page_should_inline_gear_with_header($PAGE);
 
-    $templatecontext['boost3_show_secondary_tabs'] = $showtabs;
+    if ($legacyactive) {
+        $usegear = $usegear && $hasoverflow;
+        $inlinegear = false;
+    }
+
     $templatecontext['boost3_use_gear_secondary_nav'] = $usegear && !$inlinegear;
     $templatecontext['boost3_gear_inline_header'] = $inlinegear;
-    $templatecontext['boost3_hide_tertiary_overflow'] = $hidetertiary;
+    $templatecontext['boost3_hide_tertiary_overflow'] = $usegear && $hasoverflow;
     $templatecontext['boost3_participants_gear'] = $usegear && theme_boost3_page_uses_participants_actionbar($PAGE);
 
     return $templatecontext;
