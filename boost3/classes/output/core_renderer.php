@@ -155,6 +155,13 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             return [];
         }
 
+        if (theme_boost3_legacy_drawer_active_for_page($page)) {
+            if ($this->boost3_has_navigation_overflow($page)) {
+                return $this->boost3_build_overflow_gear_items($page);
+            }
+            return $this->boost3_build_secondary_gear_excluded_items($page);
+        }
+
         $hasoverflow = $this->boost3_has_navigation_overflow($page);
 
         if ($hasoverflow) {
@@ -178,7 +185,27 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         }
 
         foreach ($secondarynav->children as $child) {
-            $this->boost3_collect_top_level_node($child, $items);
+            $this->boost3_collect_gear_secondary_node($child, $items);
+        }
+
+        return $items;
+    }
+
+    /**
+     * Gear items for secondary tabs not shown in the legacy drawer.
+     *
+     * @param moodle_page $page
+     * @return array<int, array<string, mixed>>
+     */
+    protected function boost3_build_secondary_gear_excluded_items(moodle_page $page): array {
+        $items = [];
+        $secondarynav = $page->secondarynav;
+        if (!$secondarynav || empty($secondarynav->children)) {
+            return $items;
+        }
+
+        foreach ($secondarynav->children as $child) {
+            $this->boost3_collect_gear_secondary_node($child, $items, true);
         }
 
         return $items;
@@ -421,12 +448,13 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
-     * Collect a single top-level secondary navigation tab (no deep recursion).
+     * Collect a single top-level secondary navigation tab for the gear menu.
      *
      * @param object $node
      * @param array $items
+     * @param bool $excludedonly When true, skip tabs that belong in the legacy drawer.
      */
-    protected function boost3_collect_top_level_node($node, array &$items): void {
+    protected function boost3_collect_gear_secondary_node($node, array &$items, bool $excludedonly = false): void {
         if (!is_object($node)) {
             return;
         }
@@ -435,44 +463,55 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             return;
         }
 
-        $url = null;
-        if (method_exists($node, 'action')) {
-            $url = $this->boost3_nav_url_from_action($node->action());
+        $key = $node->key ?? '';
+        if ($key === 'coursehome') {
+            return;
+        }
+        if ($excludedonly && theme_boost3_legacy_drawer_course_key_allowed($key)) {
+            return;
         }
 
+        $url = method_exists($node, 'action') ? $this->boost3_nav_url_from_action($node->action()) : null;
         $label = method_exists($node, 'get_text') ? $node->get_text() :
             (property_exists($node, 'text') ? (string) $node->text : '');
 
         if ($url !== null && $label !== '' && !$this->boost3_items_has_url($items, $url)) {
-            $items[] = $this->boost3_legacy_make_item(
-                $this->boost3_plain_nav_label($label, 0),
-                $url,
-                $this->boost3_legacy_resolve_active(!empty($node->isactive), $url),
-                $this->boost3_legacy_item_icon_from_node($this->page, $node)
-            );
+            $items[] = [
+                'text' => $this->boost3_plain_nav_label($label, 0),
+                'url' => $url,
+                'active' => !empty($node->isactive) || $this->boost3_legacy_url_matches_current($url),
+            ];
+        }
+    }
+
+    /**
+     * Collect one whitelisted secondary tab for the legacy drawer (direct links only).
+     *
+     * @param object $node
+     * @param array $items
+     */
+    protected function boost3_collect_legacy_drawer_secondary_node($node, array &$items): void {
+        if (!is_object($node) || !theme_boost3_secondary_nav_node_has_link($node)) {
+            return;
+        }
+        if (property_exists($node, 'display') && $node->display === false) {
             return;
         }
 
-        // Tab container without its own URL: expose direct children only (one level).
-        if (method_exists($node, 'has_children') && $node->has_children() && !empty($node->children)) {
-            foreach ($node->children as $child) {
-                if (!is_object($child) || (property_exists($child, 'display') && $child->display === false)) {
-                    continue;
-                }
-                $childurl = method_exists($child, 'action') ? $this->boost3_nav_url_from_action($child->action()) : null;
-                $childlabel = method_exists($child, 'get_text') ? $child->get_text() :
-                    (property_exists($child, 'text') ? (string) $child->text : '');
-                if ($childurl === null || $childlabel === '' || $this->boost3_items_has_url($items, $childurl)) {
-                    continue;
-                }
-                $items[] = $this->boost3_legacy_make_item(
-                    $this->boost3_plain_nav_label($childlabel, 0),
-                    $childurl,
-                    $this->boost3_legacy_resolve_active(!empty($child->isactive), $childurl),
-                    $this->boost3_legacy_item_icon_from_node($this->page, $child)
-                );
-            }
+        $url = $this->boost3_nav_url_from_action($node->action());
+        $label = method_exists($node, 'get_text') ? $node->get_text() :
+            (property_exists($node, 'text') ? (string) $node->text : '');
+
+        if ($url === null || $label === '' || $this->boost3_items_has_url($items, $url)) {
+            return;
         }
+
+        $items[] = $this->boost3_legacy_make_item(
+            $this->boost3_plain_nav_label($label, 0),
+            $url,
+            $this->boost3_legacy_resolve_active(!empty($node->isactive), $url),
+            $this->boost3_legacy_item_icon_from_node($this->page, $node)
+        );
     }
 
     /**
@@ -618,6 +657,39 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             }
         }
 
+        if ($page->settingsnav) {
+            foreach (theme_boost3_secondary_settingsnav_keys($node->key) as $settingskey) {
+                $match = $page->settingsnav->find($settingskey, null);
+                if (is_object($match) && empty($match->hideicon) && $match->icon instanceof pix_icon) {
+                    return $this->boost3_legacy_export_icon($match->icon);
+                }
+            }
+        }
+
+        $fallbackicons = [
+            'questionbank' => 'i/questions',
+            'participants' => 'i/users',
+            'users' => 'i/users',
+            'grades' => 'i/grades',
+            'gradeadmin' => 'i/grades',
+            'competencies' => 'i/competencies',
+            'competency' => 'i/competencies',
+            'editsettings' => 'i/settings',
+            'settings' => 'i/settings',
+            'courseedit' => 'i/settings',
+            'coursereports' => 'i/report',
+            'coursecompletion' => 'i/award',
+            'badges' => 'i/badge',
+            'contentbank' => 'i/contentbank',
+            'filtermanagement' => 'i/filter',
+            'coursetools' => 'i/external',
+            'backup' => 'i/backup',
+        ];
+        $nodekey = $node->key ?? '';
+        if ($nodekey !== '' && isset($fallbackicons[$nodekey])) {
+            return $this->boost3_legacy_export_icon(new pix_icon($fallbackicons[$nodekey], ''));
+        }
+
         return null;
     }
 
@@ -661,8 +733,20 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         );
 
         if ($page->has_secondary_navigation() && $page->secondarynav) {
+            $keyednodes = [];
             foreach ($page->secondarynav->children as $child) {
-                $this->boost3_collect_top_level_node($child, $items);
+                if (is_object($child) && !empty($child->key)) {
+                    $keyednodes[$child->key] = $child;
+                }
+            }
+            foreach (theme_boost3_legacy_drawer_course_keys() as $drawerkey) {
+                foreach (theme_boost3_legacy_drawer_course_key_variants($drawerkey) as $variant) {
+                    if (!isset($keyednodes[$variant])) {
+                        continue;
+                    }
+                    $this->boost3_collect_legacy_drawer_secondary_node($keyednodes[$variant], $items);
+                    break;
+                }
             }
         }
 
