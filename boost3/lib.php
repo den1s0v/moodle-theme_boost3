@@ -73,12 +73,32 @@ function theme_boost3_legacy_drawer_active_for_page(moodle_page $page): bool {
 }
 
 /**
+ * Whether the page operates in a real course context (not site front page).
+ *
+ * Covers course settings, /admin/tool/* course tools, course role UI, etc.
+ *
+ * @param moodle_page $page
+ * @return bool
+ */
+function theme_boost3_page_is_course_scoped_page(moodle_page $page): bool {
+    if (!$page->context || $page->context->contextlevel != CONTEXT_COURSE) {
+        return false;
+    }
+    $courseid = (int) ($page->course->id ?? $page->context->instanceid ?? 0);
+    return $courseid > 0 && $courseid != SITEID;
+}
+
+/**
  * Whether the page is site administration UI (not course settings / course tools).
  *
  * @param moodle_page $page
  * @return bool
  */
 function theme_boost3_page_is_site_admin_page(moodle_page $page): bool {
+    if (theme_boost3_page_is_course_scoped_page($page)) {
+        return false;
+    }
+
     $pagetype = $page->pagetype ?? '';
     if ($pagetype !== '' && strpos($pagetype, 'admin-') === 0) {
         return true;
