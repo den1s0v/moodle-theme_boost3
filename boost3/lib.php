@@ -32,7 +32,7 @@ defined('MOODLE_INTERNAL') || die();
 function theme_boost3_gear_navigation_enabled(): bool {
     $value = get_config('theme_boost3', 'enablegearmenu');
     if ($value === false) {
-        return true;
+        return false;
     }
     return (bool) $value;
 }

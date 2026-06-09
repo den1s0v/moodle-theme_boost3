@@ -30,7 +30,7 @@ if ($ADMIN->fulltree) {
     $name = 'theme_boost3/enablegearmenu';
     $title = get_string('enablegearmenu', 'theme_boost3');
     $description = get_string('enablegearmenu_desc', 'theme_boost3');
-    $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
+    $setting = new admin_setting_configcheckbox($name, $title, $description, 0);
     $settings->add($setting);
 
     $name = 'theme_boost3/enablelegacydrawer';
