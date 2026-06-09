@@ -228,6 +228,31 @@ function theme_boost3_page_is_course_scoped_page(moodle_page $page): bool {
 }
 
 /**
+ * Whether the page is the main course view (topics/weeks/singleactivity, not a secondary tab).
+ *
+ * @param moodle_page $page
+ * @return bool
+ */
+function theme_boost3_page_is_course_format_view(moodle_page $page): bool {
+    $pagetype = $page->pagetype ?? '';
+    if ($pagetype !== 'course-view' && strpos($pagetype, 'course-view-') !== 0) {
+        return false;
+    }
+    if ($page->has_secondary_navigation() && $page->secondarynav) {
+        foreach ($page->secondarynav->children as $child) {
+            if (!is_object($child) || empty($child->isactive)) {
+                continue;
+            }
+            $key = $child->key ?? '';
+            if ($key !== '' && $key !== 'coursehome') {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+/**
  * Whether the page is site administration UI (not course settings / course tools).
  *
  * @param moodle_page $page

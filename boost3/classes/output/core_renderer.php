@@ -604,6 +604,60 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
+     * Active state from navigation node flag only (no URL matching).
+     *
+     * @param bool $nodeactive
+     * @return bool
+     */
+    protected function boost3_legacy_resolve_active_strict(bool $nodeactive): bool {
+        return $nodeactive;
+    }
+
+    /**
+     * Whether the course home link in the drawer should appear active.
+     *
+     * @param moodle_page $page
+     * @return bool
+     */
+    protected function boost3_legacy_resolve_course_home_active(moodle_page $page): bool {
+        return theme_boost3_page_is_course_format_view($page);
+    }
+
+    /**
+     * Active state for items in the "My courses" drawer block.
+     *
+     * On the course home page the course title row above already shows active state;
+     * suppress duplicate highlights in the mycourses list.
+     *
+     * @param moodle_page $page
+     * @param bool $nodeactive
+     * @param string $url
+     * @return bool
+     */
+    protected function boost3_legacy_resolve_mycourses_item_active(moodle_page $page, bool $nodeactive, string $url): bool {
+        if (theme_boost3_page_is_course_format_view($page)) {
+            return false;
+        }
+        if ($nodeactive) {
+            return true;
+        }
+        if (!theme_boost3_page_is_course_scoped_page($page)) {
+            return false;
+        }
+        try {
+            $target = new moodle_url($url);
+            if ($target->get_path(false) !== '/course/view.php') {
+                return false;
+            }
+            $targetid = (int) $target->get_param('id');
+            $currentid = (int) ($page->course->id ?? 0);
+            return $targetid > 0 && $targetid === $currentid;
+        } catch (\moodle_exception $e) {
+            return false;
+        }
+    }
+
+    /**
      * Export a pix_icon for legacy_nav_drawer mustache (same shape as Boost flat_navigation).
      *
      * @param pix_icon|null $icon
@@ -639,11 +693,20 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             return null;
         }
 
-        if ($node->icon instanceof pix_icon) {
-            return $this->boost3_legacy_export_icon($node->icon);
+        $nodekey = $node->key ?? '';
+        $fallbackicon = $this->boost3_legacy_fallback_icon_for_key($nodekey);
+        if ($fallbackicon !== null) {
+            return $fallbackicon;
         }
 
-        if (empty($node->key)) {
+        if ($node->icon instanceof pix_icon) {
+            $exported = $this->boost3_legacy_export_icon($node->icon);
+            if ($exported !== null && $this->boost3_legacy_exported_icon_is_usable($exported)) {
+                return $exported;
+            }
+        }
+
+        if ($nodekey === '') {
             return null;
         }
 
@@ -651,21 +714,37 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             if (!$tree) {
                 continue;
             }
-            $match = $tree->find($node->key, null);
+            $match = $tree->find($nodekey, null);
             if (is_object($match) && empty($match->hideicon) && $match->icon instanceof pix_icon) {
-                return $this->boost3_legacy_export_icon($match->icon);
-            }
-        }
-
-        if ($page->settingsnav) {
-            foreach (theme_boost3_secondary_settingsnav_keys($node->key) as $settingskey) {
-                $match = $page->settingsnav->find($settingskey, null);
-                if (is_object($match) && empty($match->hideicon) && $match->icon instanceof pix_icon) {
-                    return $this->boost3_legacy_export_icon($match->icon);
+                $exported = $this->boost3_legacy_export_icon($match->icon);
+                if ($exported !== null && $this->boost3_legacy_exported_icon_is_usable($exported)) {
+                    return $exported;
                 }
             }
         }
 
+        if ($page->settingsnav) {
+            foreach (theme_boost3_secondary_settingsnav_keys($nodekey) as $settingskey) {
+                $match = $page->settingsnav->find($settingskey, null);
+                if (is_object($match) && empty($match->hideicon) && $match->icon instanceof pix_icon) {
+                    $exported = $this->boost3_legacy_export_icon($match->icon);
+                    if ($exported !== null && $this->boost3_legacy_exported_icon_is_usable($exported)) {
+                        return $exported;
+                    }
+                }
+            }
+        }
+
+        return $this->boost3_legacy_fallback_icon_for_key($nodekey);
+    }
+
+    /**
+     * Known-good pix icons for secondary navigation keys (overrides broken FA mappings).
+     *
+     * @param string $key
+     * @return array{pix: string, component: string, alt: string}|null
+     */
+    protected function boost3_legacy_fallback_icon_for_key(string $key): ?array {
         $fallbackicons = [
             'questionbank' => 'i/questions',
             'participants' => 'i/users',
@@ -685,12 +764,26 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             'coursetools' => 'i/external',
             'backup' => 'i/backup',
         ];
-        $nodekey = $node->key ?? '';
-        if ($nodekey !== '' && isset($fallbackicons[$nodekey])) {
-            return $this->boost3_legacy_export_icon(new pix_icon($fallbackicons[$nodekey], ''));
+
+        if ($key === '' || !isset($fallbackicons[$key])) {
+            return null;
         }
 
-        return null;
+        return $this->boost3_legacy_export_icon(new pix_icon($fallbackicons[$key], '', 'core'));
+    }
+
+    /**
+     * Whether exported icon data is likely to render a visible glyph.
+     *
+     * @param array{pix: string, component: string, alt: string} $icon
+     * @return bool
+     */
+    protected function boost3_legacy_exported_icon_is_usable(array $icon): bool {
+        $pix = trim($icon['pix'] ?? '');
+        if ($pix === '' || $pix === 'spacer' || $pix === 'i/none') {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -710,6 +803,13 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         ];
         if ($icon !== null) {
             $item['icon'] = $icon;
+            if (!empty($icon['pix'])) {
+                $item['iconhtml'] = $this->pix_icon(
+                    $icon['pix'],
+                    $icon['alt'] ?? '',
+                    $icon['component'] ?? 'core'
+                );
+            }
         }
         return $item;
     }
@@ -728,8 +828,8 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         $items[] = $this->boost3_legacy_make_item(
             format_string($course->fullname, true, ['context' => context_course::instance($course->id)]),
             $homeurl,
-            $this->boost3_legacy_resolve_active($page->pagetype === 'course-view', $homeurl),
-            $this->boost3_legacy_export_icon(new pix_icon('i/course', ''))
+            $this->boost3_legacy_resolve_course_home_active($page),
+            $this->boost3_legacy_export_icon(new pix_icon('i/course', '', 'core'))
         );
 
         if ($page->has_secondary_navigation() && $page->secondarynav) {
@@ -776,7 +876,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         $items = [];
         $linkmode = theme_boost3_legacy_drawer_section_link_mode();
         $viewsection = null;
-        if ($page->pagetype === 'course-view') {
+        if (theme_boost3_page_is_course_format_view($page)) {
             $viewsection = optional_param('section', null, PARAM_INT);
         }
 
@@ -794,7 +894,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
 
             if ($linkmode === 'anchor') {
                 $sectionurl = new moodle_url('/course/view.php', ['id' => $course->id], 'section-' . $sectionnum);
-                $isactive = ($page->pagetype === 'course-view'
+                $isactive = (theme_boost3_page_is_course_format_view($page)
                     && $viewsection !== null
                     && (int) $viewsection === $sectionnum);
             } else {
@@ -927,7 +1027,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                     $items[] = $this->boost3_legacy_make_item(
                         $this->boost3_plain_nav_label($label, 0),
                         $plainurl,
-                        $this->boost3_legacy_resolve_active(!empty($child->isactive), $plainurl),
+                        $this->boost3_legacy_resolve_mycourses_item_active($this->page, !empty($child->isactive), $plainurl),
                         $this->boost3_legacy_item_icon_from_node($this->page, $child)
                     );
                 }
