@@ -41,3 +41,20 @@ $string['legacydrawersectionlinks'] = 'Course section links in legacy drawer';
 $string['legacydrawersectionlinks_desc'] = 'How section names in the left drawer link to course content. Section page uses Moodle 4.5 dedicated section URLs. Anchors scroll on the course home page like Moodle 3.9 (topics/weeks formats).';
 $string['legacydrawersectionlinks_sectionpage'] = 'Section page (/course/section.php)';
 $string['legacydrawersectionlinks_anchor'] = 'Course home anchors (#section-N)';
+$string['legacydrawercoursekeys'] = 'Course tabs in legacy drawer';
+$string['legacydrawercoursekeys_desc'] = 'Secondary navigation tab keys (one per line) shown in the left drawer between the course title and section list — like Moodle 3.9. All other course tabs go to the gear menu when it is enabled. Use the node keys from the course secondary navigation (see catalog below). Unknown keys are skipped.';
+$string['legacydrawercoursekeys_catalog'] = 'Common secondary navigation keys (core and frequent plugins):
+editsettings — Course settings
+participants — Participants
+competencies — Competencies (tool_lp)
+grades — Grades
+questionbank — Question bank
+coursereports — Reports
+coursecompletion — Course completion
+badges — Badges
+contentbank — Content bank (course tab)
+filtermanagement — Filters
+coursetools — LTI / external tools
+backup — Backup and restore
+coursehome — Course home (usually omitted; course title is shown separately)
+Plugins may add more keys — inspect $PAGE->secondarynav on your site if needed.';

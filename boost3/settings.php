@@ -55,4 +55,12 @@ if ($ADMIN->fulltree) {
     ];
     $setting = new admin_setting_configselect($name, $title, $description, 'sectionpage', $choices);
     $settings->add($setting);
+
+    $name = 'theme_boost3/legacydrawercoursekeys';
+    $title = get_string('legacydrawercoursekeys', 'theme_boost3');
+    $description = get_string('legacydrawercoursekeys_desc', 'theme_boost3') . "\n\n"
+        . get_string('legacydrawercoursekeys_catalog', 'theme_boost3');
+    $default = "editsettings\nparticipants\ncompetencies\ngrades";
+    $setting = new admin_setting_configtextarea($name, $title, $description, $default, PARAM_RAW, 8, 50);
+    $settings->add($setting);
 }

@@ -41,3 +41,20 @@ $string['legacydrawersectionlinks'] = 'Ссылки на разделы курс
 $string['legacydrawersectionlinks_desc'] = 'Куда ведут названия разделов в левой панели. Страница раздела — отдельный URL Moodle 4.5. Якоря — прокрутка на главной странице курса, как в Moodle 3.9 (форматы topics/weeks).';
 $string['legacydrawersectionlinks_sectionpage'] = 'Страница раздела (/course/section.php)';
 $string['legacydrawersectionlinks_anchor'] = 'Якоря на главной курса (#section-N)';
+$string['legacydrawercoursekeys'] = 'Вкладки курса в legacy drawer';
+$string['legacydrawercoursekeys_desc'] = 'Ключи вкладок secondary navigation (по одному на строку) для левой панели между названием курса и списком разделов — как в Moodle 3.9. Остальные вкладки курса попадают в меню-шестерёнку (если оно включено). Используйте ключи узлов secondary navigation (каталог ниже). Неизвестные ключи пропускаются.';
+$string['legacydrawercoursekeys_catalog'] = 'Частые ключи secondary navigation (ядро и плагины):
+editsettings — Настройки курса
+participants — Участники
+competencies — Компетенции (tool_lp)
+grades — Оценки
+questionbank — Банк вопросов
+coursereports — Отчёты
+coursecompletion — Завершение курса
+badges — Значки
+contentbank — Банк контента (вкладка курса)
+filtermanagement — Фильтры
+coursetools — LTI / внешние инструменты
+backup — Резервное копирование
+coursehome — Главная курса (обычно не нужен: название курса уже в панели)
+Плагины могут добавлять свои ключи — при необходимости смотрите $PAGE->secondarynav на вашем сайте.';

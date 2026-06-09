@@ -86,6 +86,110 @@ function theme_boost3_legacy_drawer_section_link_mode(): string {
 }
 
 /**
+ * Secondary navigation tab keys shown in the legacy drawer course block (ordered).
+ *
+ * @return string[]
+ */
+function theme_boost3_legacy_drawer_course_keys(): array {
+    $raw = get_config('theme_boost3', 'legacydrawercoursekeys');
+    if ($raw === false || trim((string) $raw) === '') {
+        return ['editsettings', 'participants', 'competencies', 'grades'];
+    }
+
+    $keys = [];
+    foreach (preg_split('/\R+/', (string) $raw, -1, PREG_SPLIT_NO_EMPTY) as $line) {
+        foreach (preg_split('/[\s,]+/', $line, -1, PREG_SPLIT_NO_EMPTY) as $key) {
+            $key = clean_param($key, PARAM_ALPHANUMEXT);
+            if ($key !== '' && $key !== 'coursehome') {
+                $keys[] = $key;
+            }
+        }
+    }
+
+    return $keys ?: ['editsettings', 'participants', 'competencies', 'grades'];
+}
+
+/**
+ * Alternate secondary-navigation keys that map to a configured drawer key.
+ *
+ * @param string $key Configured drawer key.
+ * @return string[]
+ */
+function theme_boost3_legacy_drawer_course_key_variants(string $key): array {
+    $aliases = [
+        'editsettings' => ['editsettings', 'settings', 'courseedit'],
+        'participants' => ['participants', 'users'],
+        'grades' => ['grades', 'gradeadmin', 'gradebooksetup'],
+        'competencies' => ['competencies', 'competency'],
+    ];
+
+    return $aliases[$key] ?? [$key];
+}
+
+/**
+ * Whether a secondary navigation tab key belongs in the legacy drawer (not the gear menu).
+ *
+ * @param string $key
+ * @return bool
+ */
+function theme_boost3_legacy_drawer_course_key_allowed(string $key): bool {
+    if ($key === '' || $key === 'coursehome') {
+        return false;
+    }
+
+    foreach (theme_boost3_legacy_drawer_course_keys() as $allowed) {
+        if (in_array($key, theme_boost3_legacy_drawer_course_key_variants($allowed), true)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Whether a secondary navigation node exposes a direct link.
+ *
+ * @param object $node
+ * @return bool
+ */
+function theme_boost3_secondary_nav_node_has_link($node): bool {
+    if (!is_object($node) || !method_exists($node, 'action')) {
+        return false;
+    }
+    $action = $node->action();
+    if ($action instanceof moodle_url) {
+        return true;
+    }
+    if (is_string($action) && $action !== '' && $action !== '#') {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Whether the gear menu should list course tabs excluded from the legacy drawer.
+ *
+ * @param moodle_page $page
+ * @return bool
+ */
+function theme_boost3_page_has_legacy_gear_secondary_items(moodle_page $page): bool {
+    if (!theme_boost3_legacy_drawer_active_for_page($page) || !$page->has_secondary_navigation() || !$page->secondarynav) {
+        return false;
+    }
+
+    foreach ($page->secondarynav->children as $child) {
+        if (!is_object($child) || empty($child->key) || $child->key === 'coursehome') {
+            continue;
+        }
+        if (!theme_boost3_legacy_drawer_course_key_allowed($child->key) && theme_boost3_secondary_nav_node_has_link($child)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
  * Whether the legacy left drawer should render on this page.
  *
  * @param moodle_page $page
@@ -497,7 +601,8 @@ function theme_boost3_append_drawer_nav_flags(array $templatecontext): array {
     $inlinegear = theme_boost3_page_should_inline_gear_with_header($PAGE);
 
     if ($legacyactive) {
-        $usegear = $usegear && $hasoverflow;
+        $hasgearsecondary = theme_boost3_page_has_legacy_gear_secondary_items($PAGE);
+        $usegear = $usegear && ($hasoverflow || $hasgearsecondary);
         $inlinegear = false;
     }
 
