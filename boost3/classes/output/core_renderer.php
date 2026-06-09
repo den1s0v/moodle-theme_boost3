@@ -568,13 +568,11 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * @return array<int, array<string, mixed>>
      */
     protected function boost3_legacy_build_course_section_links(moodle_page $page): array {
-        $course = $page->course;
-        if (!in_array($course->format, ['topics', 'weeks'], true)) {
-            return [];
-        }
+        global $DB;
 
-        $items = [];
+        $course = $page->course;
         $modinfo = get_fast_modinfo($course);
+        $items = [];
         $currentsection = null;
         if ($page->context->contextlevel == CONTEXT_COURSE) {
             $sectionnum = optional_param('section', null, PARAM_INT);
@@ -583,15 +581,21 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             }
         }
 
-        foreach ($modinfo->get_section_info_all() as $sectionnum => $sectioninfo) {
-            if (empty($sectioninfo->uservisible) || !empty($sectioninfo->deletioninprogress)) {
+        $sectionrecords = $DB->get_records('course_sections', ['course' => $course->id], 'section ASC');
+        foreach ($sectionrecords as $sectionrecord) {
+            $sectionnum = (int) $sectionrecord->section;
+            $sectioninfo = $modinfo->get_section_info($sectionnum);
+            if (!empty($sectioninfo->deletioninprogress)) {
                 continue;
             }
-            $name = get_section_name($course, $sectionnum);
-            $url = course_get_url($course, $sectionnum)->out(false);
+            $name = trim(format_string(get_section_name($course, $sectionnum)));
+            if ($name === '') {
+                continue;
+            }
+            $sectionurl = new moodle_url('/course/section.php', ['id' => $sectionrecord->id]);
             $items[] = [
                 'text' => $name,
-                'url' => $url,
+                'url' => $sectionurl->out(false),
                 'active' => ($currentsection !== null && (int) $currentsection === (int) $sectionnum),
             ];
         }

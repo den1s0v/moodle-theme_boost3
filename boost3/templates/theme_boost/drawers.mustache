@@ -217,14 +217,21 @@
             {{{ output.full_header }}}
             {{#secondarymoremenu}}
                 {{^boost3_gear_inline_header}}
-                <div class="secondary-navigation d-print-none{{#boost3_show_secondary_tabs}} theme-boost3-secondary-split d-flex justify-content-between align-items-center{{/boost3_show_secondary_tabs}}{{^boost3_show_secondary_tabs}}{{#boost3_use_gear_secondary_nav}} theme-boost3-secondary-gear-wrap d-flex justify-content-end align-items-center{{/boost3_use_gear_secondary_nav}}{{/boost3_show_secondary_tabs}}">
-                    {{#boost3_show_secondary_tabs}}
-                        {{> core/moremenu}}
-                    {{/boost3_show_secondary_tabs}}
+                {{#boost3_show_secondary_tabs}}
+                <div class="secondary-navigation d-print-none theme-boost3-secondary-split d-flex justify-content-between align-items-center">
+                    {{> core/moremenu}}
                     {{#boost3_use_gear_secondary_nav}}
                         {{{ output.gear_menu }}}
                     {{/boost3_use_gear_secondary_nav}}
                 </div>
+                {{/boost3_show_secondary_tabs}}
+                {{^boost3_show_secondary_tabs}}
+                {{#boost3_use_gear_secondary_nav}}
+                <div class="secondary-navigation d-print-none theme-boost3-secondary-gear-wrap d-flex justify-content-end align-items-center">
+                    {{{ output.gear_menu }}}
+                </div>
+                {{/boost3_use_gear_secondary_nav}}
+                {{/boost3_show_secondary_tabs}}
                 {{/boost3_gear_inline_header}}
             {{/secondarymoremenu}}
             {{{ output.course_content_header_notifications }}}
