@@ -40,7 +40,12 @@
                         {{/header}}
                         {{^divider}}
                             {{^header}}
-                                <a class="dropdown-item {{#active}}active{{/active}}" href="{{url}}" role="menuitem">{{text}}</a>
+                                <a class="dropdown-item theme-boost3-gear-item {{#active}}active{{/active}}" href="{{url}}" role="menuitem">
+                                    {{#iconhtml}}
+                                    <span class="theme-boost3-gear-item-icon">{{{iconhtml}}}</span>
+                                    {{/iconhtml}}
+                                    <span class="theme-boost3-gear-item-text">{{text}}</span>
+                                </a>
                             {{/header}}
                         {{/divider}}
                     {{/items}}

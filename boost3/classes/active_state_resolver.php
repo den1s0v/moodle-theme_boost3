@@ -111,11 +111,9 @@ class active_state_resolver {
             if ($viewsection !== null && (int) $viewsection === $sectionnum) {
                 return true;
             }
-            if ($this->page->url instanceof \moodle_url) {
-                $anchor = $this->page->url->get_anchor();
-                if ($anchor === 'section-' . $sectionnum) {
-                    return true;
-                }
+            $anchor = $this->current_url_anchor();
+            if ($anchor === 'section-' . $sectionnum) {
+                return true;
             }
             return false;
         }
@@ -147,14 +145,35 @@ class active_state_resolver {
             return true;
         }
 
-        if ($this->page->url instanceof \moodle_url) {
-            $anchor = $this->page->url->get_anchor();
-            if ($anchor !== '' && preg_match('/^section-\d+$/', $anchor)) {
-                return true;
-            }
+        $anchor = $this->current_url_anchor();
+        if ($anchor !== '' && preg_match('/^section-\d+$/', $anchor)) {
+            return true;
         }
 
         return false;
+    }
+
+    /**
+     * URL fragment from the current page URL (moodle_url or core\url).
+     *
+     * @return string
+     */
+    protected function current_url_anchor(): string {
+        $url = $this->page->url;
+        if ($url === null) {
+            return '';
+        }
+        if ($url instanceof \moodle_url && method_exists($url, 'get_anchor')) {
+            return (string) $url->get_anchor();
+        }
+        if (is_object($url) && method_exists($url, 'out')) {
+            $full = $url->out(false);
+            $pos = strpos($full, '#');
+            if ($pos !== false) {
+                return substr($full, $pos + 1);
+            }
+        }
+        return '';
     }
 
     /**
@@ -164,13 +183,22 @@ class active_state_resolver {
      * @return bool
      */
     public function url_matches_current(string $url): bool {
-        if (!$this->page->url instanceof \moodle_url) {
+        $current = $this->page->url;
+        if ($current === null) {
             return false;
         }
 
         try {
             $target = new \moodle_url($url);
-            return $target->compare($this->page->url, URL_MATCH_BASE);
+            if ($current instanceof \moodle_url) {
+                return $target->compare($current, URL_MATCH_BASE);
+            }
+            if (method_exists($current, 'compare')) {
+                return $target->compare($current, URL_MATCH_BASE);
+            }
+            $targetout = strtok($target->out(false), '#');
+            $currentout = strtok($current->out(false), '#');
+            return $targetout === $currentout;
         } catch (\moodle_exception $e) {
             return false;
         }

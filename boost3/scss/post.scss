@@ -207,6 +207,36 @@ body.theme-boost3-legacy-drawer {
         max-height: 70vh;
         overflow-y: auto;
 
+        .theme-boost3-gear-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            .theme-boost3-gear-item-icon {
+                display: inline-flex;
+                align-items: center;
+                flex-shrink: 0;
+                width: 1.25rem;
+                justify-content: center;
+
+                .icon {
+                    margin: 0;
+                    font-size: 1rem;
+                    width: 1.25rem;
+                    text-align: center;
+                }
+            }
+
+            .theme-boost3-gear-item-text {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
+            &.active .theme-boost3-gear-item-icon .icon {
+                color: inherit;
+            }
+        }
+
         .theme-boost3-gear-group-label {
             font-size: 0.6875rem;
             font-weight: 600;

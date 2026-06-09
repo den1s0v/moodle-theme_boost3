@@ -332,11 +332,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                 (property_exists($child, 'text') ? (string) $child->text : '');
 
             if ($url !== null && $label !== '' && !$this->boost3_items_has_url($items, $url)) {
-                $items[] = [
-                    'text' => $this->boost3_plain_nav_label($label, 0),
-                    'url' => $url,
-                    'active' => $this->boost3_active_resolver()->from_nav_node(!empty($child->isactive), $url),
-                ];
+                $items[] = $this->boost3_gear_make_item(
+                    $this->boost3_plain_nav_label($label, 0),
+                    $url,
+                    $this->boost3_active_resolver()->from_nav_node(!empty($child->isactive), $url),
+                    $child
+                );
                 continue;
             }
 
@@ -359,11 +360,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                     if ($childurl === null || $grandlabel === '' || $this->boost3_items_has_url($items, $childurl)) {
                         continue;
                     }
-                    $items[] = [
-                        'text' => $this->boost3_plain_nav_label($grandlabel, 0),
-                        'url' => $childurl,
-                        'active' => $this->boost3_active_resolver()->from_nav_node(!empty($grandchild->isactive), $childurl),
-                    ];
+                    $items[] = $this->boost3_gear_make_item(
+                        $this->boost3_plain_nav_label($grandlabel, 0),
+                        $childurl,
+                        $this->boost3_active_resolver()->from_nav_node(!empty($grandchild->isactive), $childurl),
+                        $grandchild
+                    );
                 }
             }
         }
@@ -411,11 +413,11 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                 continue;
             }
 
-            $items[] = [
-                'text' => $this->boost3_plain_nav_label($name, 0),
-                'url' => $url,
-                'active' => !empty($option['selected']) || $this->boost3_active_resolver()->from_nav_node(false, $url),
-            ];
+            $items[] = $this->boost3_gear_make_item(
+                $this->boost3_plain_nav_label($name, 0),
+                $url,
+                !empty($option['selected']) || $this->boost3_active_resolver()->from_nav_node(false, $url)
+            );
         }
     }
 
@@ -477,11 +479,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             (property_exists($node, 'text') ? (string) $node->text : '');
 
         if ($url !== null && $label !== '' && !$this->boost3_items_has_url($items, $url)) {
-            $items[] = [
-                'text' => $this->boost3_plain_nav_label($label, 0),
-                'url' => $url,
-                'active' => $this->boost3_active_resolver()->from_nav_node(!empty($node->isactive), $url),
-            ];
+            $items[] = $this->boost3_gear_make_item(
+                $this->boost3_plain_nav_label($label, 0),
+                $url,
+                $this->boost3_active_resolver()->from_nav_node(!empty($node->isactive), $url),
+                $node
+            );
         }
     }
 
@@ -724,15 +727,101 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         ];
         if ($icon !== null) {
             $item['icon'] = $icon;
-            if (!empty($icon['pix'])) {
-                $item['iconhtml'] = $this->pix_icon(
-                    $icon['pix'],
-                    $icon['alt'] ?? '',
-                    $icon['component'] ?? 'core'
-                );
+            $iconhtml = $this->boost3_render_item_icon_html($icon, $text);
+            if ($iconhtml !== '') {
+                $item['iconhtml'] = $iconhtml;
             }
         }
         return $item;
+    }
+
+    /**
+     * Build one gear menu item (Moodle 3.9 style with optional icon).
+     *
+     * @param string $text
+     * @param string $url
+     * @param bool $active
+     * @param object|null $node Navigation node for icon resolution.
+     * @return array<string, mixed>
+     */
+    protected function boost3_gear_make_item(string $text, string $url, bool $active, $node = null): array {
+        $item = [
+            'text' => $text,
+            'url' => $url,
+            'active' => $active,
+        ];
+        $icon = null;
+        if (is_object($node)) {
+            $icon = $this->boost3_legacy_item_icon_from_node($this->page, $node);
+        }
+        if ($icon === null) {
+            $icon = $this->boost3_legacy_item_icon_from_settingsnav_url($this->page, $url);
+        }
+        $iconhtml = $this->boost3_render_item_icon_html($icon, $text);
+        if ($iconhtml !== '') {
+            $item['iconhtml'] = $iconhtml;
+        }
+        return $item;
+    }
+
+    /**
+     * @param array{pix: string, component: string, alt: string}|null $icon
+     * @param string $alttext
+     * @return string
+     */
+    protected function boost3_render_item_icon_html(?array $icon, string $alttext): string {
+        if ($icon === null || empty($icon['pix'])) {
+            return '';
+        }
+        return $this->pix_icon(
+            $icon['pix'],
+            $icon['alt'] ?? $alttext,
+            $icon['component'] ?? 'core'
+        );
+    }
+
+    /**
+     * Resolve icon from settings navigation by matching item URL.
+     *
+     * @param moodle_page $page
+     * @param string $url
+     * @return array{pix: string, component: string, alt: string}|null
+     */
+    protected function boost3_legacy_item_icon_from_settingsnav_url(moodle_page $page, string $url): ?array {
+        if (!$page->settingsnav || $url === '') {
+            return null;
+        }
+        $match = $this->boost3_find_settingsnav_node_by_url($page->settingsnav, $url);
+        if ($match !== null) {
+            return $this->boost3_legacy_item_icon_from_node($page, $match);
+        }
+        return null;
+    }
+
+    /**
+     * @param object $node
+     * @param string $url
+     * @return object|null
+     */
+    protected function boost3_find_settingsnav_node_by_url($node, string $url) {
+        if (!is_object($node)) {
+            return null;
+        }
+        if (method_exists($node, 'action')) {
+            $nodeurl = $this->boost3_nav_url_from_action($node->action());
+            if ($nodeurl !== null && $nodeurl === $url) {
+                return $node;
+            }
+        }
+        if (method_exists($node, 'has_children') && $node->has_children() && !empty($node->children)) {
+            foreach ($node->children as $child) {
+                $found = $this->boost3_find_settingsnav_node_by_url($child, $url);
+                if ($found !== null) {
+                    return $found;
+                }
+            }
+        }
+        return null;
     }
 
     /**
