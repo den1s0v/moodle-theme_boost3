@@ -894,16 +894,14 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         if (trim($html) === '') {
             return false;
         }
+        // Broken FA mapping from some navigation nodes (no glyph name).
         if (strpos($html, 'fa-fw fa-fw') !== false) {
-            return false;
-        }
-        if (preg_match('/class="[^"]*fa-fw\s+"/', $html)) {
             return false;
         }
         if (strpos($html, '<img ') !== false) {
             return true;
         }
-        // Require a named FA glyph, not bare fa-fw placeholders.
+        // Named FA glyph (e.g. fa-user-group); trailing fa-fw alone is normal in Moodle.
         if (preg_match('/\bfa-(?!fw\b)[a-z0-9-]+/', $html)) {
             return true;
         }
