@@ -88,6 +88,16 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         ]);
     }
 
+    /**
+     * Use Boost3 navbar rules (M3.9 breadcrumbs when legacy drawer is on).
+     *
+     * @return string
+     */
+    public function navbar(): string {
+        $newnav = new \theme_boost3\boostnavbar($this->page);
+        return $this->render_from_template('core/navbar', $newnav);
+    }
+
     public function gear_menu(): string {
         global $PAGE;
 
@@ -104,6 +114,26 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             'title' => get_string('gearmenu', 'theme_boost3'),
             'items' => $items,
         ]);
+    }
+
+    /**
+     * Moodle 3.9-style two-row gradebook navigation tabs.
+     *
+     * @return string HTML fragment (empty outside gradebook pages).
+     */
+    public function grade_navigation(): string {
+        global $PAGE;
+
+        if (!\theme_boost3\page_classifier::is_gradebook_page($PAGE)) {
+            return '';
+        }
+
+        $data = \theme_boost3\grade_navigation_builder::build($PAGE);
+        if ($data === null) {
+            return '';
+        }
+
+        return $this->render_from_template('theme_boost3/grade_navigation', $data);
     }
 
     /**
@@ -945,14 +975,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * @return bool
      */
     protected function boost3_icon_url_allows_settings_gear(string $url): bool {
-        if ($url === '') {
-            return false;
-        }
-        try {
-            return (new moodle_url($url))->get_path(false) === '/course/edit.php';
-        } catch (\moodle_exception $e) {
-            return false;
-        }
+        return \theme_boost3\page_classifier::url_is_course_edit($url);
     }
 
     /**
@@ -1017,21 +1040,21 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $this->boost3_legacy_export_icon(new pix_icon('i/course', '', 'core'))
         );
 
-        if ($page->has_secondary_navigation() && $page->secondarynav) {
-            $keyednodes = [];
+        $keyednodes = [];
+        if ($page->secondarynav && !empty($page->secondarynav->children)) {
             foreach ($page->secondarynav->children as $child) {
                 if (is_object($child) && !empty($child->key)) {
                     $keyednodes[$child->key] = $child;
                 }
             }
-            foreach (theme_boost3_legacy_drawer_course_keys() as $drawerkey) {
-                foreach (theme_boost3_legacy_drawer_course_key_variants($drawerkey) as $variant) {
-                    if (!isset($keyednodes[$variant])) {
-                        continue;
-                    }
-                    $this->boost3_collect_legacy_drawer_secondary_node($keyednodes[$variant], $items);
-                    break;
+        }
+        foreach (theme_boost3_legacy_drawer_course_keys() as $drawerkey) {
+            foreach (theme_boost3_legacy_drawer_course_key_variants($drawerkey) as $variant) {
+                if (!isset($keyednodes[$variant])) {
+                    continue;
                 }
+                $this->boost3_collect_legacy_drawer_secondary_node($keyednodes[$variant], $items);
+                break;
             }
         }
 

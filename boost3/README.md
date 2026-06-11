@@ -38,11 +38,16 @@ Project decision: with legacy drawer on, horizontal secondary tabs are hidden. T
 
 See language strings in theme settings for the full key catalog.
 
+Navigation matrix: [docs/NAVIGATION-DECISIONS.md](docs/NAVIGATION-DECISIONS.md)
+
 ## Architecture (reliability)
 
-- **`classes/navigation_policy.php`** — single policy for drawer / gear / tabs visibility per page kind
+- **`classes/page_classifier.php`** — page kind detection (KIND_*)
+- **`classes/navigation_matrix.php`** — declarative channel defaults per kind
+- **`classes/navigation_channel_profile.php`** — channel profile DTO
+- **`classes/navigation_policy.php`** — resolves matrix + runtime modifiers (settings, overflow)
 - **`classes/active_state_resolver.php`** — unified active highlighting (course home vs section vs my courses)
-- **`lib.php`** — settings parsers, page classification helpers, template flags
+- **`lib.php`** — settings parsers, thin wrappers, template flags
 - **`classes/output/core_renderer.php`** — builds drawer and gear item trees only
 
 ## Forked Union templates

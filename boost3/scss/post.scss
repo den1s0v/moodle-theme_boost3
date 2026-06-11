@@ -1,26 +1,52 @@
 // theme_boost3 — legacy flat left navigation drawer (Moodle 3.9 style).
 
 body.theme-boost3-legacy-drawer {
+    .theme-boost3-legacy-nav-drawer {
+        background-color: $drawer-bg-color;
+        border-inline-end: 1px solid $gray-300;
+    }
+
     .theme-boost3-legacy-nav-drawer .drawercontent {
         padding: 0;
     }
 
     .theme-boost3-legacy-nav.list-group {
-        .list-group-item-action {
+        .list-group-item {
+            position: relative;
+            border-top: 0;
+            border-bottom: 0;
+        }
+
+        .list-group-item-action,
+        .theme-boost3-legacy-nav-heading {
             border-left: 0;
             border-right: 0;
+
+            &:not(:last-child)::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 1px;
+                background-color: $list-group-border-color;
+            }
+        }
+
+        .list-group-item-action {
             padding: 0.5rem 1rem;
             color: #343a40;
 
             .media {
-                align-items: center;
+                align-items: flex-start;
             }
 
             .media-left {
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
                 margin-right: 0.5rem;
                 min-width: 1.25rem;
+                padding-top: 0.125rem;
 
                 .icon {
                     margin: 0;
@@ -33,9 +59,10 @@ body.theme-boost3-legacy-drawer {
             .media-body {
                 flex: 1 1 auto;
                 min-width: 0;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
+                white-space: normal;
+                overflow-wrap: anywhere;
+                word-wrap: break-word;
+                line-height: 1.35;
             }
 
             &:hover,
@@ -48,7 +75,10 @@ body.theme-boost3-legacy-drawer {
                 background-color: $primary;
                 color: $white;
                 font-weight: 600;
-                border-color: $primary;
+
+                &:not(:last-child)::after {
+                    background-color: $primary;
+                }
 
                 .icon,
                 .media-left .icon {
@@ -64,8 +94,6 @@ body.theme-boost3-legacy-drawer {
             letter-spacing: 0.04em;
             color: #6a737b;
             background: transparent;
-            border-left: 0;
-            border-right: 0;
             padding: 0.85rem 1rem 0.35rem;
             pointer-events: none;
             cursor: default;
@@ -148,7 +176,7 @@ body.theme-boost3-legacy-drawer {
     }
 }
 
-// Moodle 3.9-style gear trigger: larger blue cog + visible caret.
+// Gear trigger uses site primary colour (SVG cog inherits via currentColor).
 .theme-boost3-gear.action-menu {
     .dropdown-toggle.icon-no-margin {
         display: inline-flex;
@@ -157,12 +185,12 @@ body.theme-boost3-legacy-drawer {
         border: 0;
         background: transparent;
         box-shadow: none;
-        color: #0f6cbf;
+        color: $primary;
         line-height: 1;
 
         &:hover,
         &:focus {
-            color: #094478;
+            color: darken($primary, 10%);
             text-decoration: none;
             background: transparent;
             box-shadow: none;
@@ -295,5 +323,36 @@ body.theme-boost3-hide-content-tertiary {
 
     #region-main #action_bar .navitem:has(select[name="participantsnavigation"]) {
         display: none !important;
+    }
+}
+
+// Moodle 3.9-style gradebook tabs (two rows) — hide core tertiary dropdown when active.
+body.theme-boost3-grade-tabs {
+    #region-main > .tertiary-navigation {
+        display: none !important;
+    }
+
+    .theme-boost3-grade-navigation.grade-navigation {
+        margin-bottom: 0.5rem;
+
+        .nav-tabs {
+            flex-wrap: wrap;
+            border-bottom-color: rgba(0, 0, 0, 0.125);
+
+            .nav-link {
+                color: $primary;
+
+                &:hover,
+                &:focus {
+                    color: darken($primary, 10%);
+                }
+
+                &.active {
+                    color: $gray-900;
+                    font-weight: 600;
+                    border-color: rgba(0, 0, 0, 0.125) rgba(0, 0, 0, 0.125) $white;
+                }
+            }
+        }
     }
 }

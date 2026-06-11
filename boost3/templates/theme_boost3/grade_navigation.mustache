@@ -1,0 +1,38 @@
+{{!
+    @template theme_boost3/grade_navigation
+
+    Moodle 3.9-style two-row gradebook tabs.
+
+    Context variables:
+    - row1 array of { text, url, active, hasurl }
+    - row2 array of { text, url, active, hasurl }
+    - hasrow2 bool
+}}
+<div class="grade-navigation theme-boost3-grade-navigation">
+    <ul class="nav nav-tabs mb-3">
+        {{#row1}}
+        <li class="nav-item">
+            {{#active}}
+            <a class="nav-link active" title="{{text}}">{{text}}</a>
+            {{/active}}
+            {{^active}}
+            <a class="nav-link" href="{{url}}" title="{{text}}">{{text}}</a>
+            {{/active}}
+        </li>
+        {{/row1}}
+    </ul>
+    {{#hasrow2}}
+    <ul class="nav nav-tabs mb-3">
+        {{#row2}}
+        <li class="nav-item">
+            {{#active}}
+            <a class="nav-link active" title="{{text}}">{{text}}</a>
+            {{/active}}
+            {{^active}}
+            <a class="nav-link" href="{{url}}" title="{{text}}">{{text}}</a>
+            {{/active}}
+        </li>
+        {{/row2}}
+    </ul>
+    {{/hasrow2}}
+</div>

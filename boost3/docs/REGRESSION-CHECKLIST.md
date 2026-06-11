@@ -13,14 +13,19 @@ Run after theme upgrade, Boost Union merge, or navigation logic changes. Purge a
 
 ## Page types
 
-- [ ] **Course home** (`course/view.php`) — only course title active in drawer; my courses entries not all active
-- [ ] **Course section** (`course/section.php` or `#section-N`) — section active; course title not active when section selected
-- [ ] **Participants** (`user/index.php`) — gear shows tertiary; in-content combobox hidden when gear effective
-- [ ] **Question bank** — icon visible in drawer; active state correct
-- [ ] **Reports / excluded tab** — in gear when not in drawer whitelist
-- [ ] **Course edit** (`course/edit.php`) — no legacy drawer; standard admin UI
-- [ ] **Course tool** (`/admin/tool/lp/...` in course context) — legacy drawer if enabled; not treated as site admin
-- [ ] **Site admin** (`/admin/settings.php`) — no legacy drawer
+After changes to `navigation_matrix.php` or `page_classifier.php`, smoke **every** page kind in [`NAVIGATION-DECISIONS.md`](NAVIGATION-DECISIONS.md).
+
+- [x] **Course home** (`course/view.php`) — only course title active in drawer; my courses entries not all active
+- [ ] **Course section** (`course/section.php` or `#section-N`) — not run on m45 id=2
+- [x] **Participants** (`user/index.php`) — gear shows tertiary; in-content combobox hidden when gear effective
+- [ ] **Question bank** — not run
+- [x] **Reports / excluded tab** — gear on overflow pages (LTI coursetools, course home)
+- [x] **Course edit** (`course/edit.php`) — **legacy drawer**; **horizontal secondary tabs**; **no gear**; core breadcrumbs (ЛК → Курсы → категория → курс → Настройки); see [NAVIGATION-DECISIONS.md](NAVIGATION-DECISIONS.md)
+- [x] **Course tool** (`/mod/lti/coursetools.php`) — legacy drawer; not site admin
+- [ ] **Gradebook** (`/grade/report/grader/index.php`, `/grade/edit/tree/index.php`, import/export) — two-row tabs; no gear; breadcrumbs
+- [x] **Site admin** (`/admin/settings.php`) — no legacy drawer
+
+See [REGRESSION-RESULTS-2026-06-13.md](REGRESSION-RESULTS-2026-06-13.md) for m45 run details.
 
 ## Drawer / toggle
 

@@ -116,16 +116,33 @@ class active_state_resolver {
             return false;
         }
 
-        if ($this->url_matches_current($sectionurl)) {
-            return true;
-        }
+        return $this->sectionpage_url_matches($sectionurl);
+    }
 
-        if (theme_boost3_page_is_course_format_view($this->page)) {
-            $viewsection = optional_param('section', null, PARAM_INT);
-            return $viewsection !== null && (int) $viewsection === $sectionnum;
+    /**
+     * Whether a /course/section.php link matches the current section page.
+     *
+     * @param string $sectionurl
+     * @return bool
+     */
+    protected function sectionpage_url_matches(string $sectionurl): bool {
+        $current = $this->page->url;
+        if ($current === null) {
+            return false;
         }
-
-        return false;
+        try {
+            $target = new \moodle_url($sectionurl);
+            if ($current instanceof \moodle_url) {
+                if ($current->get_path(false) !== '/course/section.php'
+                    || $target->get_path(false) !== '/course/section.php') {
+                    return false;
+                }
+                return (int) $current->get_param('id') === (int) $target->get_param('id');
+            }
+            return $this->url_matches_current($sectionurl, URL_MATCH_PARAMS);
+        } catch (\moodle_exception $e) {
+            return false;
+        }
     }
 
     /**
@@ -134,6 +151,9 @@ class active_state_resolver {
      * @return bool
      */
     public function has_selected_section(): bool {
+        if (theme_boost3_page_is_course_section_page($this->page)) {
+            return true;
+        }
         if (!theme_boost3_page_is_course_format_view($this->page)) {
             return false;
         }
@@ -180,7 +200,7 @@ class active_state_resolver {
      * @param string $url
      * @return bool
      */
-    public function url_matches_current(string $url): bool {
+    public function url_matches_current(string $url, int $matchtype = URL_MATCH_PARAMS): bool {
         $current = $this->page->url;
         if ($current === null) {
             return false;
@@ -189,10 +209,10 @@ class active_state_resolver {
         try {
             $target = new \moodle_url($url);
             if ($current instanceof \moodle_url) {
-                return $target->compare($current, URL_MATCH_BASE);
+                return $target->compare($current, $matchtype);
             }
             if (method_exists($current, 'compare')) {
-                return $target->compare($current, URL_MATCH_BASE);
+                return $target->compare($current, $matchtype);
             }
             $targetout = strtok($target->out(false), '#');
             $currentout = strtok($current->out(false), '#');

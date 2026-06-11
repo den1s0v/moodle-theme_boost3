@@ -24,8 +24,14 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once(__DIR__ . '/classes/navigation_channel_profile.php');
+require_once(__DIR__ . '/classes/page_classifier.php');
+require_once(__DIR__ . '/classes/navigation_matrix.php');
 require_once(__DIR__ . '/classes/navigation_policy.php');
 require_once(__DIR__ . '/classes/active_state_resolver.php');
+require_once(__DIR__ . '/classes/breadcrumb_builder.php');
+require_once(__DIR__ . '/classes/boostnavbar.php');
+require_once(__DIR__ . '/classes/grade_navigation_builder.php');
 
 /**
  * Whether the Moodle-3-style gear navigation is enabled in theme settings.
@@ -296,12 +302,12 @@ function theme_boost3_page_has_legacy_gear_secondary_items(moodle_page $page): b
 }
 
 /**
- * Whether the legacy left drawer should render on this page.
+ * Global gates for legacy drawer (setting, login, layout) — before page-kind matrix.
  *
  * @param moodle_page $page
  * @return bool
  */
-function theme_boost3_legacy_drawer_active_for_page(moodle_page $page): bool {
+function theme_boost3_legacy_drawer_globally_available(moodle_page $page): bool {
     if (!theme_boost3_legacy_drawer_enabled()) {
         return false;
     }
@@ -311,10 +317,22 @@ function theme_boost3_legacy_drawer_active_for_page(moodle_page $page): bool {
     if (in_array($page->pagelayout, ['popup', 'embedded', 'maintenance', 'redirect'], true)) {
         return false;
     }
-    if (theme_boost3_page_is_site_admin_page($page)) {
+    return true;
+}
+
+/**
+ * Whether the legacy left drawer should render on this page.
+ *
+ * @param moodle_page $page
+ * @return bool
+ */
+function theme_boost3_legacy_drawer_active_for_page(moodle_page $page): bool {
+    if (!theme_boost3_legacy_drawer_globally_available($page)) {
         return false;
     }
-    return true;
+    $kind = \theme_boost3\page_classifier::classify($page);
+    $profile = \theme_boost3\navigation_matrix::for_kind($kind);
+    return $profile->legacydrawerwhenenabled;
 }
 
 /**
@@ -326,11 +344,27 @@ function theme_boost3_legacy_drawer_active_for_page(moodle_page $page): bool {
  * @return bool
  */
 function theme_boost3_page_is_course_scoped_page(moodle_page $page): bool {
-    if (!$page->context || $page->context->contextlevel != CONTEXT_COURSE) {
-        return false;
-    }
-    $courseid = (int) ($page->course->id ?? $page->context->instanceid ?? 0);
-    return $courseid > 0 && $courseid != SITEID;
+    return \theme_boost3\page_classifier::is_course_scoped_page($page);
+}
+
+/**
+ * Whether the page is the course settings form (/course/edit.php).
+ *
+ * @param moodle_page $page
+ * @return bool
+ */
+function theme_boost3_page_is_course_edit_page(moodle_page $page): bool {
+    return \theme_boost3\page_classifier::is_course_edit_page($page);
+}
+
+/**
+ * Whether the page is a dedicated course section view (/course/section.php).
+ *
+ * @param moodle_page $page
+ * @return bool
+ */
+function theme_boost3_page_is_course_section_page(moodle_page $page): bool {
+    return \theme_boost3\page_classifier::is_course_section_page($page);
 }
 
 /**
@@ -340,22 +374,7 @@ function theme_boost3_page_is_course_scoped_page(moodle_page $page): bool {
  * @return bool
  */
 function theme_boost3_page_is_course_format_view(moodle_page $page): bool {
-    $pagetype = $page->pagetype ?? '';
-    if ($pagetype !== 'course-view' && strpos($pagetype, 'course-view-') !== 0) {
-        return false;
-    }
-    if ($page->has_secondary_navigation() && $page->secondarynav) {
-        foreach ($page->secondarynav->children as $child) {
-            if (!is_object($child) || empty($child->isactive)) {
-                continue;
-            }
-            $key = $child->key ?? '';
-            if ($key !== '' && $key !== 'coursehome') {
-                return false;
-            }
-        }
-    }
-    return true;
+    return \theme_boost3\page_classifier::is_course_format_view($page);
 }
 
 /**
@@ -365,7 +384,21 @@ function theme_boost3_page_is_course_format_view(moodle_page $page): bool {
  * @return bool
  */
 function theme_boost3_page_is_site_admin_page(moodle_page $page): bool {
-    return \theme_boost3\navigation_policy::is_site_admin_for_drawer($page);
+    return \theme_boost3\page_classifier::is_site_admin_for_drawer($page);
+}
+
+/**
+ * Whether Moodle 3.9-style breadcrumbs should be injected for this page.
+ *
+ * @param moodle_page|null $page
+ * @return bool
+ */
+function theme_boost3_should_populate_legacy_breadcrumbs(?moodle_page $page = null): bool {
+    global $PAGE;
+
+    $page = $page ?? $PAGE;
+    return \theme_boost3\navigation_policy::breadcrumbs_mode_for_page($page)
+        === \theme_boost3\navigation_channel_profile::BREADCRUMBS_LEGACY_M39;
 }
 
 /**
@@ -384,44 +417,13 @@ function theme_boost3_should_show_secondary_tabs(?moodle_page $page = null): boo
 }
 
 /**
- * Whether a settings navigation node belongs to the course users (participants) subtree.
- *
- * @param object|null $node
- * @return bool
- */
-function theme_boost3_settingsnav_node_is_under_users($node): bool {
-    while (is_object($node)) {
-        if (($node->key ?? '') === 'users') {
-            return true;
-        }
-        $node = $node->parent ?? null;
-    }
-    return false;
-}
-
-/**
  * Whether the participants secondary tab is active.
  *
  * @param moodle_page $page
  * @return bool
  */
 function theme_boost3_page_has_active_participants_secondary_tab(moodle_page $page): bool {
-    if (!$page->secondarynav) {
-        return false;
-    }
-
-    $activenode = $page->secondarynav->find_active_node();
-    if (is_object($activenode) && ($activenode->key ?? '') === 'participants') {
-        return true;
-    }
-
-    foreach ($page->secondarynav->children as $child) {
-        if (is_object($child) && !empty($child->isactive) && ($child->key ?? '') === 'participants') {
-            return true;
-        }
-    }
-
-    return false;
+    return \theme_boost3\page_classifier::has_active_participants_secondary_tab($page);
 }
 
 /**
@@ -431,56 +433,7 @@ function theme_boost3_page_has_active_participants_secondary_tab(moodle_page $pa
  * @return bool
  */
 function theme_boost3_page_uses_participants_actionbar(moodle_page $page): bool {
-    // Primary signal: active settings navigation leaf under the users subtree.
-    if ($page->context && $page->context->contextlevel == CONTEXT_COURSE && $page->settingsnav) {
-        $activenode = $page->settingsnav->find_active_node();
-        if (is_object($activenode) && theme_boost3_settingsnav_node_is_under_users($activenode)) {
-            return true;
-        }
-        if (theme_boost3_page_has_active_participants_secondary_tab($page)) {
-            $usersnode = $page->settingsnav->find('users', null);
-            if (is_object($usersnode) && method_exists($usersnode, 'has_children') && $usersnode->has_children()) {
-                return true;
-            }
-        }
-    }
-
-    // Fallback for pages where settingsnav is not built yet.
-    $pagetype = $page->pagetype ?? '';
-    if (in_array($pagetype, [
-        'course-view-participants',
-        'enrol-otherusers',
-        'enrol-instances',
-        'group-index',
-        'group-groupings',
-        'group-overview',
-    ], true)) {
-        return true;
-    }
-
-    if ($page->url instanceof moodle_url) {
-        $path = $page->url->get_path(false);
-        $paths = [
-            '/user/index.php',
-            '/enrol/otherusers.php',
-            '/enrol/instances.php',
-            '/enrol/renameroles.php',
-            '/group/index.php',
-            '/group/groupings.php',
-            '/group/overview.php',
-        ];
-        foreach ($paths as $matchpath) {
-            if ($path === $matchpath) {
-                return true;
-            }
-        }
-        if (preg_match('#^/admin/roles/(permissions|check|override|assign)\\.php#', $path)
-            && $page->context && $page->context->contextlevel == CONTEXT_COURSE) {
-            return true;
-        }
-    }
-
-    return false;
+    return \theme_boost3\page_classifier::uses_participants_actionbar($page);
 }
 
 /**
@@ -492,7 +445,7 @@ function theme_boost3_page_uses_participants_actionbar(moodle_page $page): bool 
  * @return bool
  */
 function theme_boost3_page_is_admin_page(moodle_page $page): bool {
-    return \theme_boost3\navigation_policy::is_admin_for_gear_and_tabs($page);
+    return \theme_boost3\page_classifier::is_admin_for_gear_and_tabs($page);
 }
 
 /**
@@ -595,6 +548,9 @@ function theme_boost3_page_detect_navigation_overflow(?moodle_page $page = null)
     if (theme_boost3_page_is_admin_page($page)) {
         return false;
     }
+    if (\theme_boost3\page_classifier::is_gradebook_page($page)) {
+        return false;
+    }
     if ($page->secondarynav->get_overflow_menu_data() !== null) {
         return true;
     }
@@ -661,6 +617,7 @@ function theme_boost3_append_drawer_nav_flags(array $templatecontext, bool $lega
     $templatecontext['boost3_use_gear_secondary_nav'] = $policy->use_gear_secondary_nav;
     $templatecontext['boost3_gear_inline_header'] = $policy->gear_inline_header;
     $templatecontext['boost3_hide_tertiary_overflow'] = $policy->hide_tertiary_overflow;
+    $templatecontext['boost3_show_grade_navigation'] = $policy->show_grade_navigation;
     $templatecontext['boost3_participants_gear'] = $policy->participants_gear;
     $templatecontext['boost3_gear_effective'] = $policy->gear_effective;
 
