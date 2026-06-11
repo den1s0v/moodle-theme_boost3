@@ -1,6 +1,10 @@
 // theme_boost3 — legacy flat left navigation drawer (Moodle 3.9 style).
 
 body.theme-boost3-legacy-drawer {
+    .theme-boost3-legacy-nav-drawer {
+        border-right: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
     .theme-boost3-legacy-nav-drawer .drawercontent {
         padding: 0;
     }
