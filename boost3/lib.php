@@ -334,12 +334,32 @@ function theme_boost3_page_is_course_scoped_page(moodle_page $page): bool {
 }
 
 /**
+ * Whether the page is a dedicated course section view (/course/section.php).
+ *
+ * @param moodle_page $page
+ * @return bool
+ */
+function theme_boost3_page_is_course_section_page(moodle_page $page): bool {
+    $url = $page->url ?? null;
+    if ($url instanceof moodle_url) {
+        return $url->get_path(false) === '/course/section.php';
+    }
+    if (is_object($url) && method_exists($url, 'get_path')) {
+        return $url->get_path(false) === '/course/section.php';
+    }
+    return false;
+}
+
+/**
  * Whether the page is the main course view (topics/weeks/singleactivity, not a secondary tab).
  *
  * @param moodle_page $page
  * @return bool
  */
 function theme_boost3_page_is_course_format_view(moodle_page $page): bool {
+    if (theme_boost3_page_is_course_section_page($page)) {
+        return false;
+    }
     $pagetype = $page->pagetype ?? '';
     if ($pagetype !== 'course-view' && strpos($pagetype, 'course-view-') !== 0) {
         return false;

@@ -1017,21 +1017,21 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $this->boost3_legacy_export_icon(new pix_icon('i/course', '', 'core'))
         );
 
-        if ($page->has_secondary_navigation() && $page->secondarynav) {
-            $keyednodes = [];
+        $keyednodes = [];
+        if ($page->secondarynav && !empty($page->secondarynav->children)) {
             foreach ($page->secondarynav->children as $child) {
                 if (is_object($child) && !empty($child->key)) {
                     $keyednodes[$child->key] = $child;
                 }
             }
-            foreach (theme_boost3_legacy_drawer_course_keys() as $drawerkey) {
-                foreach (theme_boost3_legacy_drawer_course_key_variants($drawerkey) as $variant) {
-                    if (!isset($keyednodes[$variant])) {
-                        continue;
-                    }
-                    $this->boost3_collect_legacy_drawer_secondary_node($keyednodes[$variant], $items);
-                    break;
+        }
+        foreach (theme_boost3_legacy_drawer_course_keys() as $drawerkey) {
+            foreach (theme_boost3_legacy_drawer_course_key_variants($drawerkey) as $variant) {
+                if (!isset($keyednodes[$variant])) {
+                    continue;
                 }
+                $this->boost3_collect_legacy_drawer_secondary_node($keyednodes[$variant], $items);
+                break;
             }
         }
 
