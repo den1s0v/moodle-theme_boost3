@@ -199,4 +199,6 @@ if ($PAGE->pagelayout == 'frontpage') {
 
 require_once($unionlayout . '/includes/smartmenus.php');
 
+\theme_boost3\breadcrumb_builder::populate($PAGE);
+
 echo $OUTPUT->render_from_template('theme_boost/drawers', $templatecontext);

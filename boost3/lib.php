@@ -26,6 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once(__DIR__ . '/classes/navigation_policy.php');
 require_once(__DIR__ . '/classes/active_state_resolver.php');
+require_once(__DIR__ . '/classes/breadcrumb_builder.php');
 
 /**
  * Whether the Moodle-3-style gear navigation is enabled in theme settings.
@@ -386,6 +387,19 @@ function theme_boost3_page_is_course_format_view(moodle_page $page): bool {
  */
 function theme_boost3_page_is_site_admin_page(moodle_page $page): bool {
     return \theme_boost3\navigation_policy::is_site_admin_for_drawer($page);
+}
+
+/**
+ * Whether Moodle 3.9-style breadcrumbs should be injected for this page.
+ *
+ * @param moodle_page|null $page
+ * @return bool
+ */
+function theme_boost3_should_populate_legacy_breadcrumbs(?moodle_page $page = null): bool {
+    global $PAGE;
+
+    $page = $page ?? $PAGE;
+    return \theme_boost3\breadcrumb_builder::should_populate($page);
 }
 
 /**
