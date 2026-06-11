@@ -15,7 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Moodle 3.9-style breadcrumb chain for course pages when legacy drawer hides secondary tabs.
+ * Ensures $PAGE->navbar contains nodes from core navigation trees (Moodle 3.9 parity).
+ *
+ * We do not invent breadcrumb labels/URLs: items are copied from $PAGE->navigation,
+ * $PAGE->settingsnav and $PAGE->secondarynav that core already built for the page.
+ * theme_boost3\boostnavbar then stops Boost Union from stripping them in course context.
  *
  * @package    theme_boost3
  * @copyright  2026
@@ -31,12 +35,15 @@ use moodle_url;
 use navigation_node;
 
 /**
- * Builds navbar breadcrumbs matching Moodle 3.9 UX.
+ * Fills $PAGE->navbar from existing navigation API when Boost 4 left it empty.
  */
 class breadcrumb_builder {
 
+    /** @var string[] Settingsnav keys that are containers, not breadcrumb segments. */
+    private const SKIP_SETTINGS_KEYS = ['root', 'frontpage', 'mycourses', 'course', 'courses'];
+
     /**
-     * Populate $PAGE->navbar when legacy drawer is active and core left breadcrumbs empty.
+     * Populate $PAGE->navbar from core navigation when legacy drawer needs M3 breadcrumbs.
      *
      * @param moodle_page $page
      * @return void
@@ -46,25 +53,24 @@ class breadcrumb_builder {
             return;
         }
 
-        $prefix = self::build_site_prefix_items();
-        $courseitem = self::build_course_item($page);
-        $existingtail = self::export_navbar_tail($page);
+        $existing = $page->navbar->get_items();
 
-        // Mod/activity pages: core already built course → section → module; prepend dashboard prefix only.
-        if ($existingtail !== [] && self::tail_includes_course($existingtail, $page)
-                && count($existingtail) > 1) {
-            self::replace_navbar($page, array_merge($prefix, $existingtail));
+        // Activity pages: core usually already added course → section → module.
+        if ($page->context && $page->context->contextlevel == CONTEXT_MODULE && $existing !== []) {
+            if (!self::navbar_has_legacy_prefix($page)) {
+                self::prepend_site_prefix($page);
+            }
             return;
         }
 
-        $suffix = self::build_context_suffix($page, []);
-        $items = array_merge($prefix, [$courseitem], $suffix);
-        self::replace_navbar($page, $items);
+        if ($existing !== [] && !self::navbar_is_incomplete_stub($page, $existing)) {
+            return;
+        }
+
+        self::rebuild_from_navigation($page);
     }
 
     /**
-     * Whether this page should get M3-style breadcrumbs.
-     *
      * @param moodle_page $page
      * @return bool
      */
@@ -72,60 +78,272 @@ class breadcrumb_builder {
         if (!\theme_boost3_legacy_drawer_active_for_page($page)) {
             return false;
         }
-        if (!\theme_boost3_page_is_course_scoped_page($page)) {
-            return false;
-        }
+
         $kind = navigation_policy::classify($page);
         if ($kind === navigation_policy::KIND_COURSE_ADMIN) {
             return false;
         }
-        if (self::navbar_has_legacy_prefix($page)) {
-            return false;
+
+        if (\theme_boost3_page_is_course_scoped_page($page)) {
+            return true;
         }
-        return true;
+
+        if ($page->context && $page->context->contextlevel == CONTEXT_MODULE) {
+            $courseid = (int) ($page->course->id ?? 0);
+            return $courseid > SITEID;
+        }
+
+        return false;
     }
 
     /**
-     * @return array<int, array{text: string, url: ?moodle_url}>
+     * Rebuild navbar from navigation trees (sources core already maintains).
+     *
+     * @param moodle_page $page
+     * @return void
      */
-    protected static function build_site_prefix_items(): array {
-        return [
-            ['text' => get_string('myhome'), 'url' => new moodle_url('/my/')],
-            ['text' => get_string('mycourses'), 'url' => null],
-        ];
+    protected static function rebuild_from_navigation(moodle_page $page): void {
+        self::clear_navbar($page);
+
+        self::add_global_nav_node($page, 'myhome', [navigation_node::TYPE_SETTING, navigation_node::TYPE_SYSTEM]);
+
+        // M3.9: «Мои курсы» — разделитель без ссылки (как на eos2).
+        $mycourses = $page->navigation->find('mycourses', navigation_node::TYPE_ROOTNODE);
+        if ($mycourses instanceof navigation_node) {
+            self::add_node_to_navbar($page->navbar, $mycourses, false);
+        } else {
+            $page->navbar->add(get_string('mycourses'));
+        }
+
+        self::add_course_node($page);
+
+        foreach (self::collect_context_nodes($page) as $node) {
+            self::add_node_to_navbar($page->navbar, $node, true);
+        }
+    }
+
+    /**
+     * Prepend dashboard + mycourses before an existing mod/activity chain.
+     *
+     * @param moodle_page $page
+     * @return void
+     */
+    protected static function prepend_site_prefix(moodle_page $page): void {
+        $prepend = [];
+
+        $myhome = self::find_global_nav_node($page, 'myhome', [navigation_node::TYPE_SETTING, navigation_node::TYPE_SYSTEM]);
+        if ($myhome instanceof navigation_node) {
+            $prepend[] = $myhome;
+        }
+
+        $mycourses = $page->navigation->find('mycourses', navigation_node::TYPE_ROOTNODE);
+        if ($mycourses instanceof navigation_node) {
+            $prepend[] = $mycourses;
+        }
+
+        if ($prepend === []) {
+            return;
+        }
+
+        $existing = [];
+        foreach ($page->navbar->get_items() as $item) {
+            $existing[] = $item;
+        }
+        self::clear_navbar($page);
+
+        foreach ($prepend as $node) {
+            $withlink = ($node->key ?? '') !== 'mycourses';
+            self::add_node_to_navbar($page->navbar, $node, $withlink);
+        }
+        foreach ($existing as $item) {
+            $text = $item->text;
+            if ($text instanceof \lang_string) {
+                $text = $text->out();
+            }
+            $key = $item->key ?? null;
+            $type = $item->type ?? navigation_node::TYPE_CUSTOM;
+            if ($item->has_action()) {
+                $page->navbar->add($text, $item->action, $type, null, $key);
+            } else {
+                $page->navbar->add($text, null, $type, null, $key);
+            }
+        }
     }
 
     /**
      * @param moodle_page $page
-     * @return array{text: string, url: moodle_url}
+     * @return void
      */
-    protected static function build_course_item(moodle_page $page): array {
+    protected static function add_course_node(moodle_page $page): void {
         $course = $page->course;
-        $courselabel = format_string($course->shortname ?: $course->fullname, true, [
+        $label = format_string($course->shortname ?: $course->fullname, true, [
             'context' => \context_course::instance($course->id),
         ]);
+        $url = new moodle_url('/course/view.php', ['id' => $course->id]);
 
-        return [
-            'text' => $courselabel,
-            'url' => new moodle_url('/course/view.php', ['id' => $course->id]),
-        ];
+        if ($page->secondarynav) {
+            $coursenode = $page->secondarynav->find('coursehome', null);
+            if ($coursenode instanceof navigation_node) {
+                $action = $coursenode->action();
+                if ($action instanceof moodle_url) {
+                    $url = $action;
+                }
+            }
+        }
+
+        $page->navbar->add(
+            $label,
+            $url,
+            \breadcrumb_navigation_node::TYPE_COURSE,
+            null,
+            $course->id
+        );
     }
 
     /**
-     * @param array<int, array{text: string, url: ?moodle_url}> $tail
+     * Active branch from settingsnav (preferred) or secondarynav.
+     *
      * @param moodle_page $page
+     * @return navigation_node[]
+     */
+    protected static function collect_context_nodes(moodle_page $page): array {
+        $nodes = [];
+
+        if ($page->settingsnav) {
+            $active = $page->settingsnav->find_active_node();
+            if ($active instanceof navigation_node) {
+                foreach (self::path_to_root($active) as $node) {
+                    $key = $node->key ?? '';
+                    if ($key === '' || in_array($key, self::SKIP_SETTINGS_KEYS, true)) {
+                        continue;
+                    }
+                    $nodes[] = $node;
+                }
+                if ($nodes !== []) {
+                    return $nodes;
+                }
+            }
+        }
+
+        if ($page->has_secondary_navigation() && $page->secondarynav) {
+            $active = $page->secondarynav->find_active_node();
+            if (!$active instanceof navigation_node) {
+                foreach ($page->secondarynav->children as $child) {
+                    if (is_object($child) && !empty($child->isactive)) {
+                        $active = $child;
+                        break;
+                    }
+                }
+            }
+            if ($active instanceof navigation_node && ($active->key ?? '') !== 'coursehome') {
+                $nodes[] = $active;
+            }
+        }
+
+        if ($nodes === [] && \theme_boost3_page_uses_participants_actionbar($page)) {
+            $users = $page->settingsnav ? $page->settingsnav->find('users', null) : null;
+            if ($users instanceof navigation_node) {
+                $nodes[] = $users;
+            }
+        }
+
+        return $nodes;
+    }
+
+    /**
+     * @param navigation_node $node
+     * @return navigation_node[]
+     */
+    protected static function path_to_root(navigation_node $node): array {
+        $path = [];
+        $current = $node;
+        while ($current instanceof navigation_node) {
+            array_unshift($path, $current);
+            $parent = $current->parent ?? null;
+            if (!$parent instanceof navigation_node || ($parent->key ?? '') === 'root') {
+                break;
+            }
+            $current = $parent;
+        }
+        return $path;
+    }
+
+    /**
+     * @param moodle_page $page
+     * @param string $key
+     * @param int[] $types
+     * @return navigation_node|null
+     */
+    protected static function find_global_nav_node(moodle_page $page, string $key, array $types): ?navigation_node {
+        foreach ($types as $type) {
+            $node = $page->navigation->find($key, $type);
+            if ($node instanceof navigation_node) {
+                return $node;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @param moodle_page $page
+     * @param string $key
+     * @param int[] $types
+     * @return void
+     */
+    protected static function add_global_nav_node(moodle_page $page, string $key, array $types): void {
+        $node = self::find_global_nav_node($page, $key, $types);
+        if ($node instanceof navigation_node) {
+            self::add_node_to_navbar($page->navbar, $node, true);
+        }
+    }
+
+    /**
+     * Copy a navigation_node into the page navbar.
+     *
+     * @param \navbar $navbar
+     * @param navigation_node $node
+     * @param bool $includelink
+     * @return void
+     */
+    protected static function add_node_to_navbar($navbar, navigation_node $node, bool $includelink): void {
+        $text = $node->text;
+        if ($text instanceof \lang_string) {
+            $text = $text->out();
+        }
+        $text = trim(strip_tags((string) $text));
+        if ($text === '') {
+            return;
+        }
+
+        $action = $includelink ? $node->action() : null;
+        if ($action instanceof moodle_url) {
+            $navbar->add($text, $action, $node->type, null, $node->key ?? null);
+        } else if (is_string($action) && $action !== '' && $action !== '#' && $includelink) {
+            $navbar->add($text, new moodle_url($action), $node->type, null, $node->key ?? null);
+        } else {
+            $navbar->add($text, null, $node->type, null, $node->key ?? null);
+        }
+    }
+
+    /**
+     * Boost 4 often leaves only non-linked stubs before boostnavbar strips them.
+     *
+     * @param moodle_page $page
+     * @param array $items
      * @return bool
      */
-    protected static function tail_includes_course(array $tail, moodle_page $page): bool {
-        $courseurl = new moodle_url('/course/view.php', ['id' => $page->course->id]);
-        $courselabel = format_string($page->course->shortname ?: $page->course->fullname, true, [
-            'context' => \context_course::instance($page->course->id),
-        ]);
-        foreach ($tail as $item) {
-            if ($item['url'] instanceof moodle_url && $item['url']->compare($courseurl, URL_MATCH_BASE)) {
-                return true;
+    protected static function navbar_is_incomplete_stub(moodle_page $page, array $items): bool {
+        if ($items === []) {
+            return true;
+        }
+        if (!self::navbar_has_legacy_prefix($page)) {
+            $linked = 0;
+            foreach ($items as $item) {
+                if ($item->has_action()) {
+                    $linked++;
+                }
             }
-            if ($item['text'] === $courselabel) {
+            if ($linked === 0) {
                 return true;
             }
         }
@@ -133,200 +351,19 @@ class breadcrumb_builder {
     }
 
     /**
-     * Existing navbar nodes after core/mod setup (course → section → activity, grade crumbs, etc.).
-     *
      * @param moodle_page $page
-     * @return array<int, array{text: string, url: ?moodle_url}>
-     */
-    protected static function export_navbar_tail(moodle_page $page): array {
-        $tail = [];
-        $children = $page->navbar->children ?? [];
-        if (!is_array($children)) {
-            return $tail;
-        }
-
-        foreach ($children as $child) {
-            if (!($child instanceof navigation_node)) {
-                continue;
-            }
-            $text = trim(strip_tags($child->text instanceof \lang_string ? $child->text->out() : (string) $child->text));
-            if ($text === '') {
-                continue;
-            }
-            $url = null;
-            $action = $child->action();
-            if ($action instanceof moodle_url) {
-                $url = $action;
-            }
-            $tail[] = ['text' => $text, 'url' => $url];
-        }
-
-        return $tail;
-    }
-
-    /**
-     * Secondary / settings context when navbar is empty (typical course secondary pages).
-     *
-     * @param moodle_page $page
-     * @param array<int, array{text: string, url: ?moodle_url}> $existingtail
-     * @return array<int, array{text: string, url: ?moodle_url}>
-     */
-    protected static function build_context_suffix(moodle_page $page, array $existingtail): array {
-        if ($existingtail !== []) {
-            return [];
-        }
-
-        if (navigation_policy::classify($page) === navigation_policy::KIND_COURSE_FORMAT) {
-            return [];
-        }
-
-        $items = [];
-
-        if ($page->has_secondary_navigation() && $page->secondarynav) {
-            $path = self::collect_active_secondary_path($page);
-            foreach ($path as $node) {
-                $text = self::node_text($node);
-                if ($text === '' || ($node->key ?? '') === 'coursehome') {
-                    continue;
-                }
-                $url = self::node_url($node);
-                $items[] = ['text' => $text, 'url' => $url];
-            }
-        }
-
-        if ($items === [] && $page->settingsnav) {
-            $activenode = $page->settingsnav->find_active_node();
-            if ($activenode instanceof navigation_node) {
-                $ancestors = self::collect_settings_ancestors($activenode);
-                foreach ($ancestors as $node) {
-                    $text = self::node_text($node);
-                    if ($text === '') {
-                        continue;
-                    }
-                    $key = $node->key ?? '';
-                    if (in_array($key, ['root', 'frontpage', 'mycourses', 'course'], true)) {
-                        continue;
-                    }
-                    $items[] = ['text' => $text, 'url' => self::node_url($node)];
-                }
-            }
-        }
-
-        if ($items === [] && \theme_boost3_page_uses_participants_actionbar($page)) {
-            $items[] = [
-                'text' => get_string('participants'),
-                'url' => new moodle_url('/user/index.php', ['id' => $page->course->id]),
-            ];
-        }
-
-        return $items;
-    }
-
-    /**
-     * @param moodle_page $page
-     * @param array<int, array{text: string, url: ?moodle_url}> $items
      * @return void
      */
-    /**
-     * Replace navbar contents with a full M3-style chain.
-     *
-     * @param moodle_page $page
-     * @param array<int, array{text: string, url: ?moodle_url}> $items
-     * @return void
-     */
-    protected static function replace_navbar(moodle_page $page, array $items): void {
+    protected static function clear_navbar(moodle_page $page): void {
         $navbar = $page->navbar;
-        if (!empty($navbar->children)) {
-            foreach (array_values($navbar->children) as $child) {
-                if ($child instanceof navigation_node) {
-                    $child->remove();
-                }
+        if (empty($navbar->children)) {
+            return;
+        }
+        foreach (array_values($navbar->children) as $child) {
+            if ($child instanceof navigation_node) {
+                $child->remove();
             }
         }
-        foreach ($items as $item) {
-            if (!empty($item['url']) && $item['url'] instanceof moodle_url) {
-                $navbar->add($item['text'], $item['url']);
-            } else {
-                $navbar->add($item['text']);
-            }
-        }
-    }
-
-    /**
-     * @param moodle_page $page
-     * @return array<int, navigation_node>
-     */
-    protected static function collect_active_secondary_path(moodle_page $page): array {
-        $activenode = $page->secondarynav->find_active_node();
-        if (!$activenode instanceof navigation_node) {
-            foreach ($page->secondarynav->children as $child) {
-                if (is_object($child) && !empty($child->isactive)) {
-                    $activenode = $child;
-                    break;
-                }
-            }
-        }
-        if (!$activenode instanceof navigation_node) {
-            return [];
-        }
-
-        $path = [];
-        $node = $activenode;
-        while ($node instanceof navigation_node) {
-            array_unshift($path, $node);
-            $parent = $node->parent ?? null;
-            if (!$parent instanceof navigation_node || ($parent->key ?? '') === 'root') {
-                break;
-            }
-            $node = $parent;
-        }
-
-        return $path;
-    }
-
-    /**
-     * @param navigation_node $activenode
-     * @return array<int, navigation_node>
-     */
-    protected static function collect_settings_ancestors(navigation_node $activenode): array {
-        $path = [];
-        $node = $activenode;
-        while ($node instanceof navigation_node) {
-            array_unshift($path, $node);
-            $parent = $node->parent ?? null;
-            if (!$parent instanceof navigation_node || ($parent->key ?? '') === 'root') {
-                break;
-            }
-            $node = $parent;
-        }
-        return $path;
-    }
-
-    /**
-     * @param navigation_node $node
-     * @return string
-     */
-    protected static function node_text(navigation_node $node): string {
-        $raw = $node->text;
-        if ($raw instanceof \lang_string) {
-            return trim(strip_tags($raw->out()));
-        }
-        return trim(strip_tags((string) $raw));
-    }
-
-    /**
-     * @param navigation_node $node
-     * @return moodle_url|null
-     */
-    protected static function node_url(navigation_node $node): ?moodle_url {
-        $action = $node->action();
-        if ($action instanceof moodle_url) {
-            return $action;
-        }
-        if (is_string($action) && $action !== '' && $action !== '#') {
-            return new moodle_url($action);
-        }
-        return null;
     }
 
     /**
@@ -334,18 +371,15 @@ class breadcrumb_builder {
      * @return bool
      */
     protected static function navbar_has_legacy_prefix(moodle_page $page): bool {
-        $children = $page->navbar->children ?? [];
-        if (!is_array($children) || $children === []) {
-            return false;
+        foreach ($page->navbar->get_items() as $item) {
+            $action = $item->action;
+            if ($action instanceof moodle_url && $action->compare(new moodle_url('/my/'), URL_MATCH_BASE)) {
+                return true;
+            }
+            if (($item->key ?? '') === 'myhome') {
+                return true;
+            }
         }
-        $first = reset($children);
-        if (!$first instanceof navigation_node) {
-            return false;
-        }
-        $action = $first->action();
-        if (!$action instanceof moodle_url) {
-            return false;
-        }
-        return $action->compare(new moodle_url('/my/'), URL_MATCH_BASE);
+        return false;
     }
 }

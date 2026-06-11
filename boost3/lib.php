@@ -27,6 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 require_once(__DIR__ . '/classes/navigation_policy.php');
 require_once(__DIR__ . '/classes/active_state_resolver.php');
 require_once(__DIR__ . '/classes/breadcrumb_builder.php');
+require_once(__DIR__ . '/classes/boostnavbar.php');
 
 /**
  * Whether the Moodle-3-style gear navigation is enabled in theme settings.

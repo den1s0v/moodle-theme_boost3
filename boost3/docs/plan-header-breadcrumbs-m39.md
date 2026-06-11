@@ -149,18 +149,35 @@ SCSS: не ломать Union; при необходимости усилить 
 
 ### Статус реализации (2026-06-12)
 
-Начат этап A:
+**Корневая причина:** не пустой `$PAGE->navbar`, а `theme_boost_union\boostnavbar::prepare_nodes_for_boost()` — в `CONTEXT_COURSE` удаляет myhome, mycourses, course и всё, что дублирует `secondarynav`.
 
-- `classes/breadcrumb_builder.php` — сбор цепочки
-- вызов из `layout/drawers.php` (до рендера шаблона)
-- `lib.php` — `theme_boost3_should_populate_legacy_breadcrumbs()`
+**Решение (этап A — сделано):**
 
-**На m45 после первого деплоя:** на participants появляются 2 крошки без ссылок (Мои курсы, курс), без «Личный кабинет» и «Участники». Нужна отладка:
+| Файл | Роль |
+|------|------|
+| `classes/boostnavbar.php` | При legacy drawer — режим M3.9: не вызывать фильтры Union |
+| `classes/breadcrumb_builder.php` | Если navbar пуст — **копировать узлы** из `$PAGE->navigation`, `$PAGE->settingsnav`, `$PAGE->secondarynav` |
+| `classes/output/core_renderer.php` | `navbar()` → `theme_boost3\boostnavbar` |
 
-1. Убедиться, что `$PAGE->navbar` после `replace_navbar()` содержит 4 узла с `action` (временный лог / body-class маркер).
-2. Проверить, не пересобирает ли `core_renderer::full_header()` navbar после layout.
-3. При необходимости — кастомный partial breadcrumb в `templates/theme_boost3/` вместо правки `navigation_node`.
+**Проверено на m45 (курс 4):**
+
+- Участники: `ЛК → Мои курсы → Тест сертификата → Участники` (как eos2)
+- Forum: префикс + core-хвост (секция, модуль)
+- Grades: полная цепочка из settingsnav
 
 ---
 
-*Статус: анализ завершён; этап A — черновик в коде, требует доработки на стенде.*
+### Откуда берутся элементы breadcrumb (не переизобретаем)
+
+1. **Core заполняет `$PAGE->navbar`** при инициализации страницы (скрипты, settingsnav, modinfo) — те же деревья, что кормят gear и drawer.
+2. **`breadcrumb_builder`** только **дочитывает** navbar, если Boost 4 оставил пусто:
+   - **Личный кабинет** — узел `myhome` из `$PAGE->navigation` (global_navigation)
+   - **Мои курсы** — узел `mycourses` из `$PAGE->navigation` (без ссылки, как 3.9)
+   - **Курс** — shortname + URL из `secondarynav`/`course/view.php`
+   - **Вкладка/отчёт** — активная ветка `$PAGE->settingsnav` (participants, grades, …) или `$PAGE->secondarynav`
+3. **Модули** — core уже строит `курс → секция → модуль`; builder лишь **префиксует** ЛК + Мои курсы.
+4. **`boostnavbar`** перестаёт **удалять** эту цепочку в course/module context.
+
+---
+
+*Статус: этап A выполнен; этапы B–D (gear position, tertiary inline, H1) — в плане.*

@@ -88,6 +88,16 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         ]);
     }
 
+    /**
+     * Use Boost3 navbar rules (M3.9 breadcrumbs when legacy drawer is on).
+     *
+     * @return string
+     */
+    public function navbar(): string {
+        $newnav = new \theme_boost3\boostnavbar($this->page);
+        return $this->render_from_template('core/navbar', $newnav);
+    }
+
     public function gear_menu(): string {
         global $PAGE;
 
