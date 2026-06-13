@@ -18,7 +18,7 @@ Run after theme upgrade, Boost Union merge, or navigation logic changes. Purge a
 - [x] **Participants** (`user/index.php`) — gear shows tertiary; in-content combobox hidden when gear effective
 - [ ] **Question bank** — not run
 - [x] **Reports / excluded tab** — gear on overflow pages (LTI coursetools, course home)
-- [x] **Course edit** (`course/edit.php`) — no legacy drawer; standard admin UI (fixed 2026-06-13)
+- [x] **Course edit** (`course/edit.php`) — **legacy drawer**; **horizontal secondary tabs**; **no gear**; core breadcrumbs (ЛК → Курсы → категория → курс → Настройки); see [NAVIGATION-DECISIONS.md](NAVIGATION-DECISIONS.md)
 - [x] **Course tool** (`/mod/lti/coursetools.php`) — legacy drawer; not site admin
 - [x] **Site admin** (`/admin/settings.php`) — no legacy drawer
 
