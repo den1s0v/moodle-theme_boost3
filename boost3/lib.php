@@ -31,6 +31,7 @@ require_once(__DIR__ . '/classes/navigation_policy.php');
 require_once(__DIR__ . '/classes/active_state_resolver.php');
 require_once(__DIR__ . '/classes/breadcrumb_builder.php');
 require_once(__DIR__ . '/classes/boostnavbar.php');
+require_once(__DIR__ . '/classes/grade_navigation_builder.php');
 
 /**
  * Whether the Moodle-3-style gear navigation is enabled in theme settings.
@@ -547,6 +548,9 @@ function theme_boost3_page_detect_navigation_overflow(?moodle_page $page = null)
     if (theme_boost3_page_is_admin_page($page)) {
         return false;
     }
+    if (\theme_boost3\page_classifier::is_gradebook_page($page)) {
+        return false;
+    }
     if ($page->secondarynav->get_overflow_menu_data() !== null) {
         return true;
     }
@@ -613,6 +617,7 @@ function theme_boost3_append_drawer_nav_flags(array $templatecontext, bool $lega
     $templatecontext['boost3_use_gear_secondary_nav'] = $policy->use_gear_secondary_nav;
     $templatecontext['boost3_gear_inline_header'] = $policy->gear_inline_header;
     $templatecontext['boost3_hide_tertiary_overflow'] = $policy->hide_tertiary_overflow;
+    $templatecontext['boost3_show_grade_navigation'] = $policy->show_grade_navigation;
     $templatecontext['boost3_participants_gear'] = $policy->participants_gear;
     $templatecontext['boost3_gear_effective'] = $policy->gear_effective;
 

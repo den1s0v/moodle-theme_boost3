@@ -66,6 +66,9 @@ class navigation_matrix {
             page_classifier::KIND_PARTICIPANTS => new navigation_channel_profile(
                 $m39, true, false, true, $header
             ),
+            page_classifier::KIND_GRADEBOOK => new navigation_channel_profile(
+                $m39, true, false, false, $none
+            ),
             page_classifier::KIND_COURSE_ADMIN => new navigation_channel_profile(
                 $core, true, true, false, $none
             ),

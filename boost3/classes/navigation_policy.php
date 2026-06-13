@@ -39,6 +39,7 @@ class navigation_policy {
     public const KIND_COURSE_FORMAT = page_classifier::KIND_COURSE_FORMAT;
     public const KIND_COURSE_SECONDARY = page_classifier::KIND_COURSE_SECONDARY;
     public const KIND_PARTICIPANTS = page_classifier::KIND_PARTICIPANTS;
+    public const KIND_GRADEBOOK = page_classifier::KIND_GRADEBOOK;
     public const KIND_MODULE = page_classifier::KIND_MODULE;
     public const KIND_STANDARD = page_classifier::KIND_STANDARD;
 
@@ -121,7 +122,8 @@ class navigation_policy {
             'gear_effective' => $effectivegear,
             'show_gear' => $showgear,
             'gear_inline_header' => $gearinlineheader,
-            'hide_tertiary_overflow' => false,
+            'hide_tertiary_overflow' => page_classifier::is_gradebook_page($page),
+            'show_grade_navigation' => page_classifier::is_gradebook_page($page),
             'participants_gear' => false,
             'use_gear_secondary_nav' => false,
         ];
@@ -130,6 +132,10 @@ class navigation_policy {
             $policy->hide_tertiary_overflow = $hasoverflow;
             $policy->participants_gear = page_classifier::uses_participants_actionbar($page);
             $policy->use_gear_secondary_nav = !$policy->gear_inline_header;
+        }
+
+        if ($policy->show_grade_navigation) {
+            $policy->hide_tertiary_overflow = true;
         }
 
         return $policy;

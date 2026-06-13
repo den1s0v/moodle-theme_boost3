@@ -117,6 +117,26 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
+     * Moodle 3.9-style two-row gradebook navigation tabs.
+     *
+     * @return string HTML fragment (empty outside gradebook pages).
+     */
+    public function grade_navigation(): string {
+        global $PAGE;
+
+        if (!\theme_boost3\page_classifier::is_gradebook_page($PAGE)) {
+            return '';
+        }
+
+        $data = \theme_boost3\grade_navigation_builder::build($PAGE);
+        if ($data === null) {
+            return '';
+        }
+
+        return $this->render_from_template('theme_boost3/grade_navigation', $data);
+    }
+
+    /**
      * Inject gear into the page header row on course pages without horizontal secondary tabs.
      *
      * @return string

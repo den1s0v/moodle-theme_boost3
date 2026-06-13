@@ -171,6 +171,9 @@ if (!empty($templatecontext['boost3_hide_tertiary_overflow'])
 if (!empty($templatecontext['boost3_participants_gear'])) {
     $extraclasses[] = 'theme-boost3-participants-gear';
 }
+if (!empty($templatecontext['boost3_show_grade_navigation'])) {
+    $extraclasses[] = 'theme-boost3-grade-tabs';
+}
 if (!empty($templatecontext['boost3_legacy_nav_toggle'])) {
     $extraclasses[] = 'theme-boost3-legacy-drawer';
 }

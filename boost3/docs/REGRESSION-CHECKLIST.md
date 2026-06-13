@@ -22,6 +22,7 @@ After changes to `navigation_matrix.php` or `page_classifier.php`, smoke **every
 - [x] **Reports / excluded tab** — gear on overflow pages (LTI coursetools, course home)
 - [x] **Course edit** (`course/edit.php`) — **legacy drawer**; **horizontal secondary tabs**; **no gear**; core breadcrumbs (ЛК → Курсы → категория → курс → Настройки); see [NAVIGATION-DECISIONS.md](NAVIGATION-DECISIONS.md)
 - [x] **Course tool** (`/mod/lti/coursetools.php`) — legacy drawer; not site admin
+- [ ] **Gradebook** (`/grade/report/grader/index.php`, `/grade/edit/tree/index.php`, import/export) — two-row tabs; no gear; breadcrumbs
 - [x] **Site admin** (`/admin/settings.php`) — no legacy drawer
 
 See [REGRESSION-RESULTS-2026-06-13.md](REGRESSION-RESULTS-2026-06-13.md) for m45 run details.

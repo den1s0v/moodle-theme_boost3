@@ -154,7 +154,7 @@ body.theme-boost3-legacy-drawer {
     }
 }
 
-// Moodle 3.9-style gear trigger: larger blue cog + visible caret.
+// Gear trigger uses site primary colour (SVG cog inherits via currentColor).
 .theme-boost3-gear.action-menu {
     .dropdown-toggle.icon-no-margin {
         display: inline-flex;
@@ -163,12 +163,12 @@ body.theme-boost3-legacy-drawer {
         border: 0;
         background: transparent;
         box-shadow: none;
-        color: #0f6cbf;
+        color: $primary;
         line-height: 1;
 
         &:hover,
         &:focus {
-            color: #094478;
+            color: darken($primary, 10%);
             text-decoration: none;
             background: transparent;
             box-shadow: none;
@@ -301,5 +301,36 @@ body.theme-boost3-hide-content-tertiary {
 
     #region-main #action_bar .navitem:has(select[name="participantsnavigation"]) {
         display: none !important;
+    }
+}
+
+// Moodle 3.9-style gradebook tabs (two rows) — hide core tertiary dropdown when active.
+body.theme-boost3-grade-tabs {
+    #region-main > .tertiary-navigation {
+        display: none !important;
+    }
+
+    .theme-boost3-grade-navigation.grade-navigation {
+        margin-bottom: 0.5rem;
+
+        .nav-tabs {
+            flex-wrap: wrap;
+            border-bottom-color: rgba(0, 0, 0, 0.125);
+
+            .nav-link {
+                color: $primary;
+
+                &:hover,
+                &:focus {
+                    color: darken($primary, 10%);
+                }
+
+                &.active {
+                    color: $gray-900;
+                    font-weight: 600;
+                    border-color: rgba(0, 0, 0, 0.125) rgba(0, 0, 0, 0.125) $white;
+                }
+            }
+        }
     }
 }

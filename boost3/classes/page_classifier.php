@@ -49,6 +49,9 @@ class page_classifier {
     /** Participants / users subtree pages. */
     public const KIND_PARTICIPANTS = 'participants';
 
+    /** Gradebook pages (/grade/* in course context). */
+    public const KIND_GRADEBOOK = 'gradebook';
+
     /** Activity module in a real course (CONTEXT_MODULE). */
     public const KIND_MODULE = 'module';
 
@@ -62,6 +65,10 @@ class page_classifier {
     public static function classify(moodle_page $page): string {
         if (self::uses_participants_actionbar($page)) {
             return self::KIND_PARTICIPANTS;
+        }
+
+        if (self::is_gradebook_page($page)) {
+            return self::KIND_GRADEBOOK;
         }
 
         if (self::is_course_scoped_page($page)) {
@@ -87,6 +94,23 @@ class page_classifier {
         }
 
         return self::KIND_STANDARD;
+    }
+
+    /**
+     * Gradebook UI under /grade/ in a real course (not site admin).
+     *
+     * @param moodle_page $page
+     * @return bool
+     */
+    public static function is_gradebook_page(moodle_page $page): bool {
+        if (!self::is_course_scoped_page($page)) {
+            return false;
+        }
+        if (!$page->url instanceof moodle_url) {
+            return false;
+        }
+        $path = $page->url->get_path(false);
+        return (strpos($path, '/grade/') === 0);
     }
 
     /**
