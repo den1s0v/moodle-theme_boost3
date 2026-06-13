@@ -336,6 +336,29 @@ function theme_boost3_page_is_course_scoped_page(moodle_page $page): bool {
 }
 
 /**
+ * Whether the page is the course settings form (/course/edit.php).
+ *
+ * Used by navigation_policy (drawer / tabs / gear), not for breadcrumb overrides.
+ *
+ * @param moodle_page $page
+ * @return bool
+ */
+function theme_boost3_page_is_course_edit_page(moodle_page $page): bool {
+    $pagetype = $page->pagetype ?? '';
+    if ($pagetype === 'course-edit') {
+        return true;
+    }
+    $url = $page->url ?? null;
+    if ($url instanceof moodle_url) {
+        return $url->get_path(false) === '/course/edit.php';
+    }
+    if (is_object($url) && method_exists($url, 'get_path')) {
+        return $url->get_path(false) === '/course/edit.php';
+    }
+    return false;
+}
+
+/**
  * Whether the page is a dedicated course section view (/course/section.php).
  *
  * @param moodle_page $page

@@ -37,7 +37,7 @@ class navigation_policy {
     /** Site administration UI (drawer excluded). */
     public const KIND_SITE_ADMIN = 'site_admin';
 
-    /** Course settings / course-edit admin UI. */
+    /** Course settings form (/course/edit.php): legacy drawer + secondary tabs, no gear. */
     public const KIND_COURSE_ADMIN = 'course_admin';
 
     /** Main course format view (course home, no active secondary tab). */
@@ -64,8 +64,7 @@ class navigation_policy {
         }
 
         if (theme_boost3_page_is_course_scoped_page($page)) {
-            $pagetype = $page->pagetype ?? '';
-            if ($pagetype === 'course-edit') {
+            if (theme_boost3_page_is_course_edit_page($page)) {
                 return self::KIND_COURSE_ADMIN;
             }
             if (theme_boost3_page_is_course_format_view($page)) {
@@ -158,7 +157,7 @@ class navigation_policy {
         }
 
         $pagetype = $page->pagetype ?? '';
-        if ($pagetype === 'course-edit') {
+        if (theme_boost3_page_is_course_edit_page($page)) {
             return true;
         }
         if ($pagetype !== '' && strpos($pagetype, 'admin-') === 0) {

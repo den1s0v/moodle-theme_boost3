@@ -38,6 +38,8 @@ Project decision: with legacy drawer on, horizontal secondary tabs are hidden. T
 
 See language strings in theme settings for the full key catalog.
 
+Navigation matrix: [docs/NAVIGATION-DECISIONS.md](docs/NAVIGATION-DECISIONS.md)
+
 ## Architecture (reliability)
 
 - **`classes/navigation_policy.php`** — single policy for drawer / gear / tabs visibility per page kind
