@@ -13,14 +13,16 @@ Run after theme upgrade, Boost Union merge, or navigation logic changes. Purge a
 
 ## Page types
 
-- [ ] **Course home** (`course/view.php`) — only course title active in drawer; my courses entries not all active
-- [ ] **Course section** (`course/section.php` or `#section-N`) — section active; course title not active when section selected
-- [ ] **Participants** (`user/index.php`) — gear shows tertiary; in-content combobox hidden when gear effective
-- [ ] **Question bank** — icon visible in drawer; active state correct
-- [ ] **Reports / excluded tab** — in gear when not in drawer whitelist
-- [ ] **Course edit** (`course/edit.php`) — no legacy drawer; standard admin UI
-- [ ] **Course tool** (`/admin/tool/lp/...` in course context) — legacy drawer if enabled; not treated as site admin
-- [ ] **Site admin** (`/admin/settings.php`) — no legacy drawer
+- [x] **Course home** (`course/view.php`) — only course title active in drawer; my courses entries not all active
+- [ ] **Course section** (`course/section.php` or `#section-N`) — not run on m45 id=2
+- [x] **Participants** (`user/index.php`) — gear shows tertiary; in-content combobox hidden when gear effective
+- [ ] **Question bank** — not run
+- [x] **Reports / excluded tab** — gear on overflow pages (LTI coursetools, course home)
+- [x] **Course edit** (`course/edit.php`) — no legacy drawer; standard admin UI (fixed 2026-06-13)
+- [x] **Course tool** (`/mod/lti/coursetools.php`) — legacy drawer; not site admin
+- [x] **Site admin** (`/admin/settings.php`) — no legacy drawer
+
+See [REGRESSION-RESULTS-2026-06-13.md](REGRESSION-RESULTS-2026-06-13.md) for m45 run details.
 
 ## Drawer / toggle
 

@@ -180,4 +180,4 @@ SCSS: не ломать Union; при необходимости усилить 
 
 ---
 
-*Статус: этап A выполнен; этапы B–D (gear position, tertiary inline, H1) — в плане.*
+*Статус: этап A выполнен; **этап B реализован** (2026-06-13, `navigation_policy`); этапы C–D (tertiary inline, H1) — в плане.*
