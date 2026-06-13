@@ -122,11 +122,6 @@ class navigation_policy {
             $policy->use_gear_secondary_nav = !$policy->gear_inline_header;
         }
 
-        if ($legacyeligible) {
-            $policy->use_gear_secondary_nav = $policy->show_gear && ($hasoverflow || $hasexcludedtabs);
-            $policy->gear_inline_header = false;
-        }
-
         return $policy;
     }
 
@@ -263,9 +258,6 @@ class navigation_policy {
         bool $effectivegear,
         bool $hasoverflow
     ): bool {
-        if ($legacyeligible) {
-            return false;
-        }
         if (!$effectivegear) {
             return false;
         }
@@ -275,6 +267,13 @@ class navigation_policy {
         if (self::is_admin_for_gear_and_tabs($page)) {
             return false;
         }
+
+        // Legacy drawer hides horizontal secondary tabs — gear belongs in the header row (M3.9).
+        if ($legacyeligible) {
+            return self::should_show_gear($page, $effectivegear);
+        }
+
+        // Split mode: horizontal tabs + gear in the secondary navigation strip.
         if ($hasoverflow) {
             return false;
         }

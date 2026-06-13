@@ -316,6 +316,10 @@ function theme_boost3_legacy_drawer_active_for_page(moodle_page $page): bool {
     if (theme_boost3_page_is_site_admin_page($page)) {
         return false;
     }
+    // Course settings UI keeps standard horizontal secondary tabs (no legacy drawer).
+    if (($page->pagetype ?? '') === 'course-edit') {
+        return false;
+    }
     return true;
 }
 
