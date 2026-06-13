@@ -17,14 +17,15 @@ body.theme-boost3-legacy-drawer {
             color: #343a40;
 
             .media {
-                align-items: center;
+                align-items: flex-start;
             }
 
             .media-left {
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
                 margin-right: 0.5rem;
                 min-width: 1.25rem;
+                padding-top: 0.125rem;
 
                 .icon {
                     margin: 0;
@@ -37,9 +38,10 @@ body.theme-boost3-legacy-drawer {
             .media-body {
                 flex: 1 1 auto;
                 min-width: 0;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
+                white-space: normal;
+                overflow-wrap: anywhere;
+                word-wrap: break-word;
+                line-height: 1.35;
             }
 
             &:hover,
