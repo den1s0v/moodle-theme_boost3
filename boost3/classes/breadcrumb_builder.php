@@ -80,6 +80,123 @@ class breadcrumb_builder {
     }
 
     /**
+     * Core/Union breadcrumb chain for /course/edit.php (pagelayout admin).
+     *
+     * Boost Union parent::prepare_nodes_for_boost() strips «Курсы» and the course node
+     * in CONTEXT_COURSE; core often leaves $PAGE->navbar empty before boostnavbar runs.
+     *
+     * @param moodle_page $page
+     * @return void
+     */
+    public static function populate_course_admin_union(moodle_page $page): void {
+        if (!page_classifier::is_course_edit_page($page)) {
+            return;
+        }
+
+        self::clear_navbar($page);
+
+        self::add_global_nav_node($page, 'myhome', [navigation_node::TYPE_SETTING, navigation_node::TYPE_SYSTEM]);
+
+        $courses = self::find_global_nav_node($page, 'courses', [
+            navigation_node::TYPE_CUSTOM,
+            navigation_node::TYPE_CATEGORY,
+            navigation_node::TYPE_SYSTEM,
+        ]);
+        if (!$courses instanceof navigation_node) {
+            $courses = $page->navigation->find('courses', navigation_node::TYPE_ROOTNODE);
+        }
+        if ($courses instanceof navigation_node) {
+            self::add_node_to_navbar($page->navbar, $courses, true);
+        } else {
+            $page->navbar->add(
+                get_string('courses'),
+                new moodle_url('/course/index.php'),
+                navigation_node::TYPE_CUSTOM,
+                null,
+                'courses'
+            );
+        }
+
+        self::add_category_nodes($page);
+        self::add_course_node($page);
+
+        $tail = self::collect_course_edit_tail_nodes($page);
+        if ($tail !== []) {
+            foreach ($tail as $node) {
+                self::add_node_to_navbar($page->navbar, $node, true);
+            }
+        } else {
+            $label = trim((string) ($page->heading ?? ''));
+            if ($label === '' && !empty($page->title)) {
+                $label = trim((string) $page->title);
+            }
+            if ($label !== '') {
+                $page->navbar->add($label);
+            }
+        }
+    }
+
+    /**
+     * @param moodle_page $page
+     * @return void
+     */
+    protected static function add_category_nodes(moodle_page $page): void {
+        if (empty($page->categories)) {
+            return;
+        }
+        foreach (array_reverse($page->categories) as $category) {
+            $context = \context_coursecat::instance($category->id);
+            if (!\core_course_category::can_view_category($category)) {
+                continue;
+            }
+            $displaycontext = \context_helper::get_navigation_filter_context($context);
+            $url = new moodle_url('/course/index.php', ['categoryid' => $category->id]);
+            $name = format_string($category->name, true, ['context' => $displaycontext]);
+            $page->navbar->add(
+                $name,
+                $url,
+                \breadcrumb_navigation_node::TYPE_CATEGORY,
+                null,
+                $category->id
+            );
+        }
+    }
+
+    /**
+     * Last segment on course/edit.php (e.g. «Настройки» / «Редактировать настройки»).
+     *
+     * @param moodle_page $page
+     * @return navigation_node[]
+     */
+    protected static function collect_course_edit_tail_nodes(moodle_page $page): array {
+        if ($page->settingsnav) {
+            $active = $page->settingsnav->find_active_node();
+            if ($active instanceof navigation_node) {
+                return [$active];
+            }
+            foreach (['editsettings', 'settings', 'courseadmin'] as $key) {
+                $node = $page->settingsnav->find($key, null);
+                if ($node instanceof navigation_node) {
+                    return [$node];
+                }
+            }
+        }
+
+        if ($page->has_secondary_navigation() && $page->secondarynav) {
+            $active = $page->secondarynav->find_active_node();
+            if ($active instanceof navigation_node && ($active->key ?? '') !== 'coursehome') {
+                return [$active];
+            }
+            $edit = $page->secondarynav->find('editsettings', null);
+            if ($edit instanceof navigation_node) {
+                return [$edit];
+            }
+        }
+
+        return [];
+    }
+
+    /**
      * Rebuild navbar from navigation trees (sources core already maintains).
      *
      * @param moodle_page $page

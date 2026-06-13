@@ -40,21 +40,54 @@ class boostnavbar extends \theme_boost_union\boostnavbar {
     }
 
     /**
+     * @return bool
+     */
+    protected function should_use_core_union_breadcrumbs(): bool {
+        return navigation_policy::breadcrumbs_mode_for_page($this->page)
+            === navigation_channel_profile::BREADCRUMBS_CORE_UNION;
+    }
+
+    /**
      * @return void
      */
     protected function prepare_nodes_for_boost(): void {
         if ($this->should_use_legacy_m39_breadcrumbs()) {
             breadcrumb_builder::populate($this->page);
-            // Re-read items: builder may have filled $PAGE->navbar after constructor copied an empty list.
-            $this->items = [];
-            foreach ($this->page->navbar->get_items() as $item) {
-                $this->items[] = $item;
-            }
+            $this->sync_items_from_page_navbar();
             $this->prepare_nodes_for_legacy_m39();
             return;
         }
 
+        if ($this->should_use_core_union_breadcrumbs()) {
+            $this->prepare_nodes_for_core_union();
+            return;
+        }
+
         parent::prepare_nodes_for_boost();
+    }
+
+    /**
+     * Core/Union chain for course/edit.php — do not call Union parent (it strips courses/course crumbs).
+     *
+     * @return void
+     */
+    protected function prepare_nodes_for_core_union(): void {
+        breadcrumb_builder::populate_course_admin_union($this->page);
+        $this->sync_items_from_page_navbar();
+        $this->remove_duplicate_items();
+        $this->remove_last_item_action();
+    }
+
+    /**
+     * Re-copy navbar items built after boostnavbar construction (e.g. breadcrumb_builder).
+     *
+     * @return void
+     */
+    protected function sync_items_from_page_navbar(): void {
+        $this->items = [];
+        foreach ($this->page->navbar->get_items() as $item) {
+            $this->items[] = $item;
+        }
     }
 
     /**
