@@ -35,25 +35,8 @@ class boostnavbar extends \theme_boost_union\boostnavbar {
      * @return bool
      */
     protected function should_use_legacy_m39_breadcrumbs(): bool {
-        if (!\theme_boost3_legacy_drawer_active_for_page($this->page)) {
-            return false;
-        }
-
-        $kind = navigation_policy::classify($this->page);
-        if ($kind === navigation_policy::KIND_COURSE_ADMIN) {
-            return false;
-        }
-
-        if (\theme_boost3_page_is_course_scoped_page($this->page)) {
-            return true;
-        }
-
-        if ($this->page->context && $this->page->context->contextlevel == CONTEXT_MODULE) {
-            $courseid = (int) ($this->page->course->id ?? 0);
-            return $courseid > SITEID;
-        }
-
-        return false;
+        return navigation_policy::breadcrumbs_mode_for_page($this->page)
+            === navigation_channel_profile::BREADCRUMBS_LEGACY_M39;
     }
 
     /**

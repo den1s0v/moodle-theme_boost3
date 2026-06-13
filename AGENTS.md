@@ -75,7 +75,7 @@ Bump версии в `boost3/version.php` обязателен при измен
 | Главная курса | `/course/view.php?id=4` |
 | Участники + gear overflow | `/user/index.php?id=4` |
 | Настройки темы | `/admin/settings.php?section=themesettingboost3` |
-| Редактирование курса (без legacy drawer) | `/course/edit.php?id=4` |
+| Редактирование курса (legacy drawer + tabs) | `/course/edit.php?id=4` |
 
 На eos2 используй те же пути относительно `https://eos2.vstu.ru` и курс, доступный преподавателю.
 
@@ -105,10 +105,13 @@ Bump версии в `boost3/version.php` обязателен при измен
 
 | Файл | Зона ответственности |
 |------|---------------------|
+| `classes/page_classifier.php` | Детекция типа страницы (KIND_*) |
+| `classes/navigation_matrix.php` | Декларативная матрица каналов по KIND |
+| `classes/navigation_channel_profile.php` | DTO профиля каналов |
+| `classes/navigation_policy.php` | Resolve: матрица + runtime-модификаторы |
 | `classes/output/core_renderer.php` | Сборка drawer и gear, иконки |
-| `classes/navigation_policy.php` | Видимость drawer / gear / tabs |
 | `classes/active_state_resolver.php` | Подсветка active |
-| `lib.php` | Флаги страницы, парсеры настроек |
+| `lib.php` | Обёртки, парсеры настроек, template flags |
 | `templates/theme_boost3/*.mustache` | Разметка drawer, gear, toggle |
 | `scss/post.scss` | Стили legacy navigation |
 

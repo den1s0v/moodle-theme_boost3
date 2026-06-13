@@ -13,6 +13,8 @@ Run after theme upgrade, Boost Union merge, or navigation logic changes. Purge a
 
 ## Page types
 
+After changes to `navigation_matrix.php` or `page_classifier.php`, smoke **every** page kind in [`NAVIGATION-DECISIONS.md`](NAVIGATION-DECISIONS.md).
+
 - [x] **Course home** (`course/view.php`) — only course title active in drawer; my courses entries not all active
 - [ ] **Course section** (`course/section.php` or `#section-N`) — not run on m45 id=2
 - [x] **Participants** (`user/index.php`) — gear shows tertiary; in-content combobox hidden when gear effective

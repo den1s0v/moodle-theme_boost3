@@ -1,7 +1,11 @@
 # Navigation display decisions — theme_boost3
 
-Single source of truth for **which UI channels** appear on each page kind when legacy drawer and/or gear menu are enabled.  
-Implementation: [`classes/navigation_policy.php`](../classes/navigation_policy.php), [`classes/breadcrumb_builder.php`](../classes/breadcrumb_builder.php).
+Single source of truth for **which UI channels** appear on each page kind when legacy drawer and/or gear menu are enabled.
+
+**Code (authoritative):** [`classes/navigation_matrix.php`](../classes/navigation_matrix.php) + [`classes/page_classifier.php`](../classes/page_classifier.php) → resolved by [`classes/navigation_policy.php`](../classes/navigation_policy.php).  
+**This document** is a human-readable mirror — update both when UX rules change.
+
+**Breadcrumbs implementation:** [`classes/breadcrumb_builder.php`](../classes/breadcrumb_builder.php), [`classes/boostnavbar.php`](../classes/boostnavbar.php).
 
 **Requires:** `enablelegacydrawer=1` for legacy drawer + M3.9 breadcrumbs unless noted.
 
@@ -28,7 +32,7 @@ Implementation: [`classes/navigation_policy.php`](../classes/navigation_policy.p
 | `participants` | `user/index.php`, `renameroles.php` | yes | no | yes* | yes | Tertiary in gear; action buttons stay in content |
 | **`course_admin`** | **`course/edit.php`** | **yes** | **yes** | **no** | **core** | **M3.9 drawer + horizontal course tabs; no gear** (tabs are enough) |
 | `site_admin` | `/admin/settings.php` | no | yes | no | no | Standard Boost Union |
-| Activity module | `mod/*/view.php` | yes | no | yes* | yes (prefix) | Core mod crumbs + ЛК/Мои курсы prefix |
+| `module` | `mod/*/view.php` | yes | no | yes* | yes (M3.9) | Core mod crumbs + ЛК/Мои курсы prefix |
 
 \*Gear when `enablegearmenu=1` **or** automatic fallback (excluded secondary tabs / overflow).
 

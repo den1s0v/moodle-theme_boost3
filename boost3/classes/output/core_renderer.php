@@ -955,14 +955,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * @return bool
      */
     protected function boost3_icon_url_allows_settings_gear(string $url): bool {
-        if ($url === '') {
-            return false;
-        }
-        try {
-            return (new moodle_url($url))->get_path(false) === '/course/edit.php';
-        } catch (\moodle_exception $e) {
-            return false;
-        }
+        return \theme_boost3\page_classifier::url_is_course_edit($url);
     }
 
     /**

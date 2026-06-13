@@ -75,25 +75,8 @@ class breadcrumb_builder {
      * @return bool
      */
     public static function should_populate(moodle_page $page): bool {
-        if (!\theme_boost3_legacy_drawer_active_for_page($page)) {
-            return false;
-        }
-
-        $kind = navigation_policy::classify($page);
-        if ($kind === navigation_policy::KIND_COURSE_ADMIN) {
-            return false;
-        }
-
-        if (\theme_boost3_page_is_course_scoped_page($page)) {
-            return true;
-        }
-
-        if ($page->context && $page->context->contextlevel == CONTEXT_MODULE) {
-            $courseid = (int) ($page->course->id ?? 0);
-            return $courseid > SITEID;
-        }
-
-        return false;
+        return navigation_policy::breadcrumbs_mode_for_page($page)
+            === navigation_channel_profile::BREADCRUMBS_LEGACY_M39;
     }
 
     /**
