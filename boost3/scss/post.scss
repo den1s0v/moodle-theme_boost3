@@ -2,11 +2,14 @@
 
 body.theme-boost3-legacy-drawer {
     .theme-boost3-legacy-nav-drawer {
-        border-right: 1px solid rgba(0, 0, 0, 0.12);
+        background-color: $drawer-bg-color;
+        border-inline-end: 1px solid $gray-300;
     }
 
     .theme-boost3-legacy-nav-drawer .drawercontent {
-        padding: 0;
+        padding-block: 0;
+        padding-inline-end: $drawer-padding-y;
+        padding-inline-start: 0;
     }
 
     .theme-boost3-legacy-nav.list-group {
