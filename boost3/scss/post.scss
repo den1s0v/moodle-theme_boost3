@@ -7,15 +7,33 @@ body.theme-boost3-legacy-drawer {
     }
 
     .theme-boost3-legacy-nav-drawer .drawercontent {
-        padding-block: 0;
-        padding-inline-end: $drawer-padding-y;
-        padding-inline-start: 0;
+        padding: 0;
     }
 
     .theme-boost3-legacy-nav.list-group {
-        .list-group-item-action {
+        .list-group-item {
+            position: relative;
+            border-top: 0;
+            border-bottom: 0;
+        }
+
+        .list-group-item-action,
+        .theme-boost3-legacy-nav-heading {
             border-left: 0;
             border-right: 0;
+
+            &:not(:last-child)::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 1px;
+                background-color: $list-group-border-color;
+            }
+        }
+
+        .list-group-item-action {
             padding: 0.5rem 1rem;
             color: #343a40;
 
@@ -57,7 +75,10 @@ body.theme-boost3-legacy-drawer {
                 background-color: $primary;
                 color: $white;
                 font-weight: 600;
-                border-color: $primary;
+
+                &:not(:last-child)::after {
+                    background-color: $primary;
+                }
 
                 .icon,
                 .media-left .icon {
@@ -73,8 +94,6 @@ body.theme-boost3-legacy-drawer {
             letter-spacing: 0.04em;
             color: #6a737b;
             background: transparent;
-            border-left: 0;
-            border-right: 0;
             padding: 0.85rem 1rem 0.35rem;
             pointer-events: none;
             cursor: default;
