@@ -275,11 +275,17 @@ class breadcrumb_builder {
      * @return void
      */
     protected static function add_course_node(moodle_page $page): void {
-        $course = $page->course;
+        $course = $page->course ?? null;
+        $courseid = (int) ($course->id ?? 0);
+        // New course form (/course/edit.php without id): no real course crumb yet.
+        if ($courseid <= 0 || $courseid == SITEID) {
+            return;
+        }
+
         $label = format_string($course->shortname ?: $course->fullname, true, [
-            'context' => \context_course::instance($course->id),
+            'context' => \context_course::instance($courseid),
         ]);
-        $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        $url = new moodle_url('/course/view.php', ['id' => $courseid]);
 
         if ($page->secondarynav) {
             $coursenode = $page->secondarynav->find('coursehome', null);
@@ -296,7 +302,7 @@ class breadcrumb_builder {
             $url,
             \breadcrumb_navigation_node::TYPE_COURSE,
             null,
-            $course->id
+            $courseid
         );
     }
 
@@ -451,18 +457,33 @@ class breadcrumb_builder {
     }
 
     /**
+     * Clear manually added navbar crumbs.
+     *
+     * Important: {@see navbar} overrides `$children` as a plain array (not
+     * navigation_node_collection). Calling navigation_node::remove() fatals with
+     * "Call to a member function remove() on array" because parent->children has
+     * no remove() method.
+     *
      * @param moodle_page $page
      * @return void
      */
     protected static function clear_navbar(moodle_page $page): void {
         $navbar = $page->navbar;
-        if (empty($navbar->children)) {
-            return;
+        $navbar->children = [];
+        // Only use crumbs we add next — do not re-merge active nav chain in get_items().
+        $navbar->ignore_active(true);
+
+        // Invalidate get_items() cache and prepended crumbs (both protected).
+        $reflection = new \ReflectionClass($navbar);
+        if ($reflection->hasProperty('items')) {
+            $prop = $reflection->getProperty('items');
+            $prop->setAccessible(true);
+            $prop->setValue($navbar, null);
         }
-        foreach (array_values($navbar->children) as $child) {
-            if ($child instanceof navigation_node) {
-                $child->remove();
-            }
+        if ($reflection->hasProperty('prependchildren')) {
+            $prop = $reflection->getProperty('prependchildren');
+            $prop->setAccessible(true);
+            $prop->setValue($navbar, []);
         }
     }
 
