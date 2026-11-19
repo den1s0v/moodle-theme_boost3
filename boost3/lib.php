@@ -637,6 +637,7 @@ function theme_boost3_get_main_scss_content($theme) {
 
     $scss = theme_boost_union_get_main_scss_content(\core\output\theme_config::load('boost_union'));
     $scss .= file_get_contents($CFG->dirroot . '/theme/boost3/scss/post.scss');
+    $scss .= file_get_contents($CFG->dirroot . '/theme/boost3/scss/editmode.scss');
 
     return $scss;
 }

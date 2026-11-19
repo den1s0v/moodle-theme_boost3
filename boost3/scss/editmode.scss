@@ -1,0 +1,143 @@
+// theme_boost3 — course page in edit mode and bulk edit mode (Moodle 4.5),
+// aligned with Moodle 3.9 Boost look. Appended after post.scss by theme_boost3_get_main_scss_content(),
+// so Boost/Boost Union variables and mixins ($primary, $border-color, media-breakpoint-up) are available.
+
+// 1. Page header: bulk edit toggle and gear on one line, gear at the right edge (3.9 look).
+//    Core lib/templates/full_header.mustache renders every header action as a block
+//    <div class="header-action ms-2">, so with two actions they stack vertically.
+#page-header .header-actions-container {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    > .header-action {
+        display: flex;
+        align-items: center;
+    }
+    // Gear is added last in core_renderer::full_header() as <div class="header-action ms-2">
+    // <div class="action-menu d-inline theme-boost3-gear">; keep it at the right edge anyway.
+    > .header-action:has(> .theme-boost3-gear) {
+        order: 99;
+    }
+    .bulkEnable {
+        padding-top: 0;
+        padding-bottom: 0;
+        line-height: 1.5;
+        white-space: nowrap;
+    }
+}
+
+// 2. Section ⋮ menu on the same vertical line and height as activity ⋮ menus.
+//    Activity menus sit inside .activity-item padding (.75rem), the section menu only inside
+//    .section-item padding, hence 12px further right; the header stretches it to the top.
+.course-section-header > .section_action_menu {
+    align-self: center;
+    margin-right: .75rem;
+    .action-menu.section-actions .btn.btn-icon {
+        font-size: inherit; // core uses $font-size-lg here
+    }
+}
+
+// 3. Edit mode separators: same as view mode — 1px solid full-width line, same height
+//    (.25rem + 1px + .25rem), no extra gap above the first activity. Core shows a 2px dashed
+//    inset divider before every activity. The hover "+" insert button is kept.
+.editing .course-content .section .activity > .divider {
+    hr {
+        margin: .25rem 0;
+        border-top: 1px solid $border-color;
+    }
+    // Highlight the line while hovering "+" (as core does).
+    &:has(.btn.add-content:hover) hr {
+        border-top-color: $primary;
+    }
+}
+.editing .course-content .section .activity:first-child > .divider {
+    // Zero height in flow; the .75rem hover zone overlaps the empty bottom margin of
+    // the sectioninfo block (my-3), so activities do not move.
+    height: .75rem;
+    margin-top: -.75rem;
+    hr {
+        margin: 0;
+        border-top-width: 0;
+    }
+}
+
+// 4. Bottom "Add an activity or resource": no dashed line under it, right-aligned like the
+//    3.9 link; right edge matches the activity ⋮ column.
+.course-content [data-region="always-visible-add-content"] {
+    justify-content: flex-end !important;
+    hr {
+        display: none;
+    }
+    .divider-content {
+        position: static;
+        padding-left: 0 !important;
+        padding-right: .75rem !important;
+        background: none;
+    }
+}
+
+// 5. Bulk edit mode (body.bulkenabled). Core "Bulk editing" rules (theme/boost/scss/moodle/course.scss)
+//    assume borderless sections: .section gets margin-left 1rem (both li.course-section and ul.section),
+//    the section checkbox is pushed outside the card (left: -2.75rem), activities get 2rem indent
+//    and a 2px dashed border. On 4.5 section cards this shifts and narrows the cards.
+.bulkenabled .course-content {
+    .section {
+        margin-left: 0;
+    }
+    .course-section:not(:first-child) {
+        margin-top: 1rem; // same as without bulk mode
+    }
+    // Section checkbox inside the card header, before the collapse chevron.
+    .course-section-header .bulkselect {
+        position: static;
+        left: auto;
+        width: auto;
+        margin-right: .5rem;
+    }
+    // Full-width activities; checkbox inside the row, left of the icon.
+    .activity {
+        margin-left: 0;
+        margin-top: .25rem;
+        padding-top: .25rem;
+        border-top: 1px solid $border-color;
+        &:first-child {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: 0;
+        }
+    }
+    .activity-item .bulkselect {
+        float: left;
+        margin-left: 0;
+        margin-right: .75rem;
+        margin-top: .6rem; // centre on a 32px icon; verify in browser
+    }
+    // Selection outline stays inside the card padding.
+    .activity-item.selected,
+    .activity-item:hover:not(:has(.activity:hover)) {
+        outline-offset: -2px;
+    }
+}
+
+// 6. Bulk edit sticky footer: content column width, "Selected - N" inline with the close button.
+//    Core limits .sticky-footer-content to 830px only for standard/limitedwidth layouts,
+//    so on the course page the footer spans the whole window.
+@include media-breakpoint-up(md) {
+    .pagelayout-course .stickyfooter .sticky-footer-content.bulkactions,
+    .pagelayout-incourse .stickyfooter .sticky-footer-content.bulkactions {
+        max-width: 830px;
+    }
+}
+.sticky-footer-content.bulkactions > .d-flex.flex-column:last-child {
+    flex-direction: row !important;
+    align-items: center;
+    gap: .5rem;
+    .bulkcount {
+        order: -1;
+        white-space: nowrap;
+    }
+    .bulkcancel .btn {
+        padding-top: 0;
+    }
+}
