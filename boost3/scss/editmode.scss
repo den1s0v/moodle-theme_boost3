@@ -40,8 +40,14 @@
 
 // 3. Edit mode separators: same as view mode — 1px solid full-width line, same height
 //    (.25rem + 1px + .25rem), no extra gap above the first activity. Core shows a 2px dashed
-//    inset divider before every activity. The hover "+" insert button is kept.
-.editing .course-content .section .activity > .divider {
+//    inset divider before every activity. Only the per-activity dividers are touched; the
+//    always-visible "Add an activity or resource" divider at the section bottom stays as in core.
+//    The hover "+" insert button is kept: core shows .divider-content on .divider:hover, so the
+//    divider gets an enlarged invisible hit area (padding + equal negative margin, net layout
+//    unchanged). It overlaps only the .75rem padding of the neighbouring .activity-item.
+.editing .course-content .section .activity > .divider:not(.always-visible) {
+    padding: .5rem 0;
+    margin: -.5rem 0;
     hr {
         margin: .25rem 0;
         border-top: 1px solid $border-color;
@@ -51,29 +57,12 @@
         border-top-color: $primary;
     }
 }
-.editing .course-content .section .activity:first-child > .divider {
-    // Zero height in flow; the .75rem hover zone overlaps the empty bottom margin of
-    // the sectioninfo block (my-3), so activities do not move.
-    height: .75rem;
-    margin-top: -.75rem;
+.editing .course-content .section .activity:first-child > .divider:not(.always-visible) {
+    // No line and zero net height above the first activity; the hit area (.5rem up and down)
+    // lies in the empty sectioninfo margin and the activity padding.
     hr {
         margin: 0;
         border-top-width: 0;
-    }
-}
-
-// 4. Bottom "Add an activity or resource": no dashed line under it, right-aligned like the
-//    3.9 link; right edge matches the activity ⋮ column.
-.course-content [data-region="always-visible-add-content"] {
-    justify-content: flex-end !important;
-    hr {
-        display: none;
-    }
-    .divider-content {
-        position: static;
-        padding-left: 0 !important;
-        padding-right: .75rem !important;
-        background: none;
     }
 }
 
@@ -88,12 +77,20 @@
     .course-section:not(:first-child) {
         margin-top: 1rem; // same as without bulk mode
     }
-    // Section checkbox inside the card header, before the collapse chevron.
+    // Section checkbox inside the card header, in the same column as the activity checkboxes
+    // (.activity-item padding .75rem), vertically centred with the collapse chevron.
     .course-section-header .bulkselect {
         position: static;
         left: auto;
         width: auto;
-        margin-right: .5rem;
+        align-self: center;
+        display: flex;
+        align-items: center;
+        margin-left: .75rem;
+        margin-right: .75rem;
+        input {
+            margin: 0;
+        }
     }
     // Full-width activities; checkbox inside the row, left of the icon.
     .activity {
@@ -120,13 +117,16 @@
     }
 }
 
-// 6. Bulk edit sticky footer: content column width, "Selected - N" inline with the close button.
-//    Core limits .sticky-footer-content to 830px only for standard/limitedwidth layouts,
-//    so on the course page the footer spans the whole window.
+// 6. Bulk edit sticky footer: content aligned with the course column, "Selected - N" inline with
+//    the close button. On limitedwidth pages core already limits .sticky-footer-content to 830px
+//    (same as .main-inner), but the text column inside .main-inner is narrower by its padding
+//    (.5rem) plus div[role="main"] padding (15px) on each side; core's px-3 (1rem) is less.
 @include media-breakpoint-up(md) {
     .pagelayout-course .stickyfooter .sticky-footer-content.bulkactions,
     .pagelayout-incourse .stickyfooter .sticky-footer-content.bulkactions {
         max-width: 830px;
+        padding-left: calc(.5rem + 15px) !important;
+        padding-right: calc(.5rem + 15px) !important;
     }
 }
 .sticky-footer-content.bulkactions > .d-flex.flex-column:last-child {

@@ -24,12 +24,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2026111900;
+$plugin->version   = 2026111901;
 $plugin->requires  = 2024100702;
 $plugin->supported = [405, 405];
 $plugin->component = 'theme_boost3';
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.1 (edit mode / bulk edit layout fix)';
+$plugin->release   = '0.1.2 (edit mode / bulk edit layout fix)';
 $plugin->dependencies = [
     'theme_boost_union' => 2024100700,
 ];
