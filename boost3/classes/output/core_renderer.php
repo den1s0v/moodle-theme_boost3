@@ -153,6 +153,35 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
+     * Block ⋮ action menu: let the dropdown flip / position against the window.
+     *
+     * Core core_renderer::block_controls() leaves the Bootstrap default boundary 'scrollParent', which in the
+     * blocks drawer is .drawercontent (overflow-y: auto), so the menu of the last block opens downwards and is
+     * clipped at the bottom. Core uses set_boundary('window') for menus inside scroll containers (assign grading
+     * table, question bank, singleview). Same output as core otherwise.
+     *
+     * @param array $actions
+     * @param null|string $blockid
+     * @return string
+     */
+    public function block_controls($actions, $blockid = null) {
+        if (empty($actions)) {
+            return '';
+        }
+        $menu = new \action_menu($actions);
+        if ($blockid !== null) {
+            $menu->set_owner_selector('#' . $blockid);
+        }
+        $menu->set_boundary('window');
+        $label = get_string('actionsmenu');
+        $icon = $this->pix_icon('i/menu', '') . \html_writer::span($label, 'sr-only');
+        $menu->triggerattributes += ['title' => $label];
+        $menu->set_menu_trigger($icon, 'btn btn-sm icon-no-margin ms-1 p-1');
+        $menu->attributes['class'] .= ' block-control-actions commands';
+        return $this->render($menu);
+    }
+
+    /**
      * Hide in-content participants tertiary select when it is shown in the gear menu.
      *
      * @param object $course

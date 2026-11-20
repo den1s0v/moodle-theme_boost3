@@ -1,0 +1,125 @@
+
+// theme_boost3 — UI sweep (Moodle 4.5.6): blocks drawer forms, page header width, site home edit mode.
+// Appended after editmode.scss by theme_boost3_get_main_scss_content().
+
+// 1. Forms inside the blocks drawer (e.g. block_supervised): stack labels above fields.
+//    Core mform rows use viewport breakpoints (.col-md-3 / .col-md-9), so inside the ~315px drawer the
+//    label column is ~45px and Russian labels wrap letter by letter. Same as core
+//    .mform.full-width-labels (theme/boost/scss/moodle/forms.scss), which moodleform::set_display_vertical()
+//    would add, applied to every form in the drawer. Header (h3) reduced to block-title size.
+#theme_boost-drawers-blocks .block .mform:not(.full-width-labels) {
+    .fitem.row {
+        margin-left: 0;
+        margin-right: 0;
+        > .col-md-3,
+        > .col-md-9 {
+            flex: 0 0 100%;
+            max-width: 100%;
+            width: inherit;
+            padding-left: 0;
+            padding-right: 0;
+        }
+        &.femptylabel > .col-md-3 {
+            display: none;
+        }
+        .form-control {
+            max-width: 100%;
+        }
+    }
+    .col-form-label .form-label-addon {
+        margin-left: .25rem;
+    }
+}
+#theme_boost-drawers-blocks .block .mform .ftoggler h3 {
+    font-size: $h5-font-size;
+}
+
+// 2. Page header and secondary tabs as wide as the content (Moodle 3.9: header spans the content column).
+//    Core lib/templates/full_header.mustache uses .header-maxwidth (830px, centred) on every page, but
+//    .main-inner is only limited on body.limitedwidth / .pagelayout-standard (830px) and body.mediumwidth
+//    (1120px). On full-width pages (e.g. mod/forum/view.php) the header became a narrow centred column.
+@include media-breakpoint-up(md) {
+    body:not(.limitedwidth):not(.mediumwidth):not(.pagelayout-standard) {
+        .header-maxwidth,
+        .secondary-navigation .navigation .nav-tabs {
+            max-width: none;
+        }
+    }
+    body.mediumwidth {
+        .header-maxwidth,
+        .secondary-navigation .navigation .nav-tabs {
+            max-width: $medium-content-maxwidth;
+        }
+    }
+}
+
+// 3. Site home section in edit mode. format_site is not reactive, so core_courseformat cm/activity.mustache
+//    prints the legacy YUI move handle (a/span.editing_move) inline *before* the .activity-grid block:
+//    the handle gets its own line, the ⋮ menu (grid column) one line lower, content below that.
+//    Put the handle in a column left of the grid, as in Moodle 3.9.
+.editing .sitetopic .activity-item:has(> .editing_move) {
+    display: flex;
+    align-items: flex-start;
+    > .editing_move {
+        flex: 0 0 auto;
+        margin-right: .5rem;
+        padding-top: .5rem; // centre on the activity icon; verify in browser
+    }
+    > .activity-grid {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+}
+// Edit summary link moved inside the section card (templates/core_courseformat/local/content/frontpagesection.mustache).
+.sitetopic .theme-boost3-sitetopic-edit {
+    position: relative;
+    z-index: 1;
+    margin-right: .75rem; // same column as the activity ⋮ menus (.activity-item padding)
+    .icon {
+        margin-right: 0;
+    }
+}
+
+// 4. block_grade_sheets («Ведомости контрольных недель») in the blocks drawer (~268px content width).
+//    The plugin (block_grade_sheets.php render_grade_sheets_*()) prints <details><summary> + html_table
+//    (table.generaltable, 3 columns: group | Первая | Вторая); status cells are
+//    <a><div><button class="btn btn-{style}"> отправлено </button></div></a> with default .btn padding/font,
+//    so the table is ~359px and scrolls inside .table-responsive. The block is course-view only
+//    (applicable_formats), so only the drawer is targeted; wide block regions keep the plugin look.
+//    .table-responsive stays as fallback. Status words use &nbsp; ("не&nbsp;создано") and stay on one line.
+#theme_boost-drawers-blocks .block_grade_sheets {
+    details > summary .btn {
+        white-space: normal;
+        text-align: left;
+    }
+    table.generaltable {
+        table-layout: fixed;
+        width: 100%;
+        margin-bottom: .5rem;
+        font-size: .8125rem;
+        th,
+        td {
+            padding: .25rem;
+            vertical-align: middle;
+        }
+        th:first-child,
+        td:first-child {
+            width: 36%;
+            overflow-wrap: anywhere; // long group names, e.g. «Глобальная группа з-М24/УЧР-01»
+            hyphens: auto;
+        }
+        th:not(:first-child),
+        td:not(:first-child) {
+            width: 32%;
+            text-align: center;
+        }
+        .btn {
+            display: inline-block;
+            max-width: 100%;
+            padding: .125rem .25rem;
+            font-size: .75rem;
+            line-height: 1.25;
+            white-space: normal;
+        }
+    }
+}
